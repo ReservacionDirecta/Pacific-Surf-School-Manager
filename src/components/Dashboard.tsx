@@ -19,6 +19,7 @@ import { getStudents, getStudentPackages, getClasses, getInstructors, getPayment
 import { isBefore, addDays, parseISO, isToday, format } from 'date-fns';
 import { getAccessToken, initAuth } from '../services/googleAuth';
 import { syncFromGoogleSheets } from '../services/sheetsSync';
+import StudentDossierModal from './StudentDossierModal';
 
 export default function Dashboard({ onNavigate }: { onNavigate?: (view: string) => void }) {
   const [studentPackages, setStudentPackages] = useState<(StudentPackage & { studentName?: string })[]>([]);
@@ -27,6 +28,7 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (view: string) 
   const [instructors, setInstructors] = useState<Instructor[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedDossierStudent, setSelectedDossierStudent] = useState<Student | null>(null);
   
   // Sync state
   const [isSyncing, setIsSyncing] = useState(false);
@@ -426,7 +428,14 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (view: string) 
                   const needBoard = students[cls.studentId]?.hasBoard !== 'Si';
 
                   return (
-                    <div key={cls.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-slate-50 hover:bg-slate-100/80 rounded-xl border border-slate-100 transition duration-150 gap-3">
+                    <div 
+                      key={cls.id} 
+                      onClick={() => {
+                        const stud = students[cls.studentId];
+                        if (stud) setSelectedDossierStudent(stud);
+                      }}
+                      className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-slate-50 hover:bg-cyan-50/40 hover:border-cyan-200 rounded-xl border border-slate-100 transition duration-150 gap-3 cursor-pointer group"
+                    >
                       <div className="flex items-start gap-3">
                         <span className="text-xs font-extrabold font-mono text-blue-700 bg-blue-50 border border-blue-100 px-2.5 py-1.5 rounded-lg shrink-0">
                           {clsTime} hrs
@@ -525,8 +534,11 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (view: string) 
               lowClasses.map(sp => (
                 <li 
                   key={sp.id} 
-                  className="px-6 py-4 flex justify-between items-center hover:bg-slate-50 cursor-pointer transition"
-                  onClick={() => onNavigate?.('classes')}
+                  className="px-6 py-4 flex justify-between items-center hover:bg-cyan-50/30 cursor-pointer transition"
+                  onClick={() => {
+                    const stud = students[sp.studentId];
+                    if (stud) setSelectedDossierStudent(stud);
+                  }}
                 >
                   <div className="truncate pr-4">
                     <p className="font-bold text-slate-900 text-sm font-display truncate">{students[sp.studentId]?.name || 'Pasajero no registrado'}</p>
@@ -556,8 +568,11 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (view: string) 
                 return (
                   <li 
                     key={sp.id} 
-                    className="px-6 py-4 flex justify-between items-center hover:bg-slate-50 cursor-pointer transition"
-                    onClick={() => onNavigate?.('payments')}
+                    className="px-6 py-4 flex justify-between items-center hover:bg-cyan-50/30 cursor-pointer transition"
+                    onClick={() => {
+                      const stud = students[sp.studentId];
+                      if (stud) setSelectedDossierStudent(stud);
+                    }}
                   >
                     <div className="pr-4 truncate">
                       <p className="font-bold text-slate-900 text-sm font-display truncate">{students[sp.studentId]?.name || 'Alumno pendiente'}</p>
@@ -580,6 +595,15 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (view: string) 
           </ul>
         </div>
       </div>
+
+      {selectedDossierStudent && (
+        <StudentDossierModal
+          student={selectedDossierStudent}
+          isOpen={!!selectedDossierStudent}
+          onClose={() => setSelectedDossierStudent(null)}
+          onDataChanged={fetchData}
+        />
+      )}
     </div>
   );
 }

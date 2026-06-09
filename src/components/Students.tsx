@@ -12,8 +12,10 @@ import {
   Mail, 
   X, 
   Calendar,
-  AlertTriangle
+  AlertTriangle,
+  Eye
 } from 'lucide-react';
+import StudentDossierModal from './StudentDossierModal';
 import { Student, Package, StudentPackage } from '../types';
 import { addStudent, addStudentPackage, getStudents, getPackages, deleteStudent, updateStudent, getStudentPackages } from '../services/db';
 
@@ -23,6 +25,7 @@ export default function Students({ onNavigate }: { onNavigate?: (view: string) =
   const [studentPackages, setStudentPackages] = useState<StudentPackage[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
+  const [selectedDossierStudent, setSelectedDossierStudent] = useState<Student | null>(null);
 
   // Form state
   const [name, setName] = useState('');
@@ -372,6 +375,13 @@ export default function Students({ onNavigate }: { onNavigate?: (view: string) =
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-bold space-x-3">
                     <button 
+                      onClick={() => setSelectedDossierStudent(student)}
+                      className="text-emerald-600 hover:text-emerald-700 transition cursor-pointer inline-flex items-center gap-1 hover:underline"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      Ficha
+                    </button>
+                    <button 
                       onClick={() => handleEditClick(student)}
                       className="text-blue-600 hover:text-blue-700 transition cursor-pointer inline-flex items-center gap-1 hover:underline"
                     >
@@ -577,6 +587,15 @@ export default function Students({ onNavigate }: { onNavigate?: (view: string) =
             </form>
           </motion.div>
         </div>
+      )}
+
+      {selectedDossierStudent && (
+        <StudentDossierModal
+          student={selectedDossierStudent}
+          isOpen={!!selectedDossierStudent}
+          onClose={() => setSelectedDossierStudent(null)}
+          onDataChanged={fetchData}
+        />
       )}
     </div>
   );
