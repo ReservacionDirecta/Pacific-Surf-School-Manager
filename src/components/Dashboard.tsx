@@ -3,7 +3,7 @@ import { motion } from 'motion/react';
 import { 
   Users, 
   UserCheck, 
-  Compass, 
+  Waves, 
   RefreshCw, 
   DollarSign, 
   AlertTriangle, 
@@ -313,7 +313,7 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (view: string) 
             <span className="text-[11px] text-slate-400 inline-flex items-center gap-1">Precisan tablas <ChevronRight className="w-3 h-3" /></span>
           </div>
           <div className="w-12 h-12 rounded-xl bg-cyan-50/80 text-cyan-600 flex items-center justify-center shadow-sm border border-cyan-100">
-            <Compass className="w-5 h-5" />
+            <Waves className="w-5 h-5" />
           </div>
         </motion.div>
 

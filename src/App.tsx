@@ -16,7 +16,7 @@ import {
   LogOut, 
   Menu, 
   X,
-  Compass,
+  Waves,
   Lock,
   Mail,
   User as UserIcon
@@ -95,7 +95,7 @@ export default function App() {
       <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50">
         <div className="relative flex items-center justify-center">
           <div className="animate-spin rounded-full h-16 w-16 border-4 border-cyan-100 border-t-cyan-600"></div>
-          <Compass className="absolute w-6 h-6 text-cyan-600 animate-pulse" />
+          <Waves className="absolute w-6 h-6 text-cyan-600" />
         </div>
         <p className="mt-4 text-sm font-semibold font-display text-slate-500 tracking-wider">Cargando Pacific Surf...</p>
       </div>
@@ -119,7 +119,7 @@ export default function App() {
         >
           <div className="flex flex-col items-center mb-8">
             <div className="bg-gradient-to-tr from-cyan-500 to-blue-600 p-3 rounded-xl text-white shadow-lg shadow-cyan-500/20 mb-3 hover:scale-105 transition-transform duration-300">
-              <Compass className="w-8 h-8" />
+              <Waves className="w-8 h-8 md:animate-bounce" />
             </div>
             <h1 className="text-3.5xl font-extrabold tracking-tight bg-gradient-to-r from-white via-cyan-100 to-cyan-400 bg-clip-text text-transparent font-display">
               Pacific Surf
@@ -199,7 +199,7 @@ export default function App() {
         {/* Brand identity */}
         <div className="p-6 border-b border-slate-800 flex items-center gap-3">
           <div className="bg-cyan-500 p-2 rounded-lg text-white font-bold shrink-0">
-            <Compass className="w-5 h-5 animate-spin-slow" />
+            <Waves className="w-5 h-5 text-white" />
           </div>
           <div>
             <h1 className="text-lg font-bold text-white font-display uppercase tracking-wider">Pacific Surf</h1>
@@ -258,7 +258,7 @@ export default function App() {
         <header className="lg:hidden bg-slate-900 text-white flex items-center justify-between px-4 h-16 shadow-md border-b border-slate-800 relative z-30">
           <div className="flex items-center gap-2.5">
             <div className="bg-cyan-500 p-1.5 rounded text-white">
-              <Compass className="w-4.5 h-4.5" />
+              <Waves className="w-4.5 h-4.5" />
             </div>
             <span className="font-extrabold tracking-tight text-white font-display text-base">Pacific Surf</span>
           </div>
@@ -291,7 +291,7 @@ export default function App() {
               >
                 <div className="p-4 border-b border-slate-900 flex justify-between items-center bg-slate-900">
                   <span className="font-extrabold tracking-normal text-white text-base flex items-center gap-2">
-                    <Compass className="w-5 h-5 text-cyan-400" /> Pacific Surf
+                    <Waves className="w-5 h-5 text-cyan-400" /> Pacific Surf
                   </span>
                   <button 
                     onClick={() => setSidebarOpen(false)}
