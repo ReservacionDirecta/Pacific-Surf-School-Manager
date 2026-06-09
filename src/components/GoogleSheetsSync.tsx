@@ -15,7 +15,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { getAccessToken, googleSignIn, logoutGoogle, initAuth } from '../services/googleAuth';
-import { getStudents, getInstructors, getClasses, getStudentPackages, addStudent, addStudentPackage, getPackages, getPayments } from '../services/db';
+import { getStudents, getInstructors, getClasses, getStudentPackages, addStudent, addStudentPackage, getPackages, getPayments, isLocalStorageMode, LS_KEYS } from '../services/db';
 import { User } from 'firebase/auth';
 
 const DEFAULT_SPREADSHEET_ID = '1OuuRJwIUwqEnfb9d_JMOsItxMDGwRAA231vRTO-diR8';
@@ -174,7 +174,7 @@ export default function GoogleSheetsSync() {
       addLog(`Exportando ${alumnos.length} Alumnos...`);
       const alumnosValues = [
         ['ID', 'Nombre', 'Email', 'Telefono', 'Fecha Registro', 'Nivel'],
-        ...alumnos.map(a => [a.id, a.name, a.email || '', a.phone || '', a.createdAt || '', a.level || 'principiante'])
+        ...alumnos.map(a => [a.id, a.name, a.email || '', a.phone || '', a.enrollmentDate || '', ''])
       ];
       await writeSheetData(activeToken, spreadsheetId, 'Alumnos!A1:F2000', alumnosValues);
 
@@ -477,6 +477,21 @@ export default function GoogleSheetsSync() {
       ]);
 
       // 6. Overwrite the database
+      if (isLocalStorageMode()) {
+        addLog('Modo estático detectado. Sobrescribiendo datos directamente en LocalStorage...');
+        localStorage.setItem(LS_KEYS.students, JSON.stringify(parsedStudents));
+        localStorage.setItem(LS_KEYS.instructors, JSON.stringify(parsedInstructors));
+        localStorage.setItem(LS_KEYS.packages, JSON.stringify(currentPkgs));
+        localStorage.setItem(LS_KEYS.studentPackages, JSON.stringify(parsedStudentPackages));
+        localStorage.setItem(LS_KEYS.classes, JSON.stringify(parsedClasses));
+        localStorage.setItem(LS_KEYS.payments, JSON.stringify(currentPayments));
+
+        addLog('✅ ¡Base de datos local (LocalStorage) restaurada y actualizada con éxito!');
+        alert('¡Base de datos local completamente restaurada en tu navegador desde Google Sheets!');
+        setIsSyncing(false);
+        return;
+      }
+
       addLog('Enviando datos combinados a SQLite para sobrescribir base de datos local...');
       const syncRes = await fetch('/api/sync/overwrite', {
         method: 'POST',

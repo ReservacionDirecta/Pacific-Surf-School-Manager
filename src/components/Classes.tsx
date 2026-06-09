@@ -29,7 +29,7 @@ interface GoogleSheetClass {
   status: string;
 }
 
-export default function Classes() {
+export default function Classes({ onNavigate }: { onNavigate?: (view: string) => void }) {
   const [classes, setClasses] = useState<Class[]>([]);
   const [students, setStudents] = useState<Record<string, Student>>({});
   const [instructors, setInstructors] = useState<Record<string, Instructor>>({});
@@ -42,6 +42,16 @@ export default function Classes() {
   const [sheetsClasses, setSheetsClasses] = useState<GoogleSheetClass[]>([]);
   const [loadingSheets, setLoadingSheets] = useState(false);
   const [sheetsError, setSheetsError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const targetStudentId = localStorage.getItem('open_schedule_class_for_student_id');
+    if (targetStudentId && Object.keys(students).length > 0) {
+      setStudentId(targetStudentId);
+      setShowAddModal(true);
+      setDate(new Date().toISOString().substring(0, 16));
+      localStorage.removeItem('open_schedule_class_for_student_id');
+    }
+  }, [students]);
 
   // Form state
   const [date, setDate] = useState('');

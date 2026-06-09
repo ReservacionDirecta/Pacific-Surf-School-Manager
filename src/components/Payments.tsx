@@ -24,7 +24,7 @@ import { StudentPackage, Student, Payment, Package } from '../types';
 import { getStudents, getStudentPackages, updateStudentPackage, addPayment, getPayments, deletePayment, addStudentPackage, getPackages } from '../services/db';
 import { format, parseISO, isBefore } from 'date-fns';
 
-export default function Payments() {
+export default function Payments({ onNavigate }: { onNavigate?: (view: string) => void }) {
   const [studentPackages, setStudentPackages] = useState<StudentPackage[]>([]);
   const [students, setStudents] = useState<Record<string, Student>>({});
   const [payments, setPayments] = useState<Payment[]>([]);
@@ -76,6 +76,26 @@ export default function Payments() {
   useEffect(() => {
     fetchData();
   }, []);
+
+  useEffect(() => {
+    if (!loading && studentPackages.length > 0) {
+      const targetPkgId = localStorage.getItem('open_payment_for_package_id');
+      if (targetPkgId) {
+        const found = studentPackages.find(sp => sp.id === targetPkgId);
+        if (found) {
+          setEditingPayment(found);
+        }
+        localStorage.removeItem('open_payment_for_package_id');
+      }
+
+      const assignStudentIdValue = localStorage.getItem('open_assign_pkg_for_student_id');
+      if (assignStudentIdValue) {
+        setAssignStudentId(assignStudentIdValue);
+        setShowAssignModal(true);
+        localStorage.removeItem('open_assign_pkg_for_student_id');
+      }
+    }
+  }, [loading, studentPackages]);
 
   const handleUpdatePayment = async (e: React.FormEvent) => {
     e.preventDefault();

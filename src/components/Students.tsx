@@ -17,7 +17,7 @@ import {
 import { Student, Package, StudentPackage } from '../types';
 import { addStudent, addStudentPackage, getStudents, getPackages, deleteStudent, updateStudent, getStudentPackages } from '../services/db';
 
-export default function Students() {
+export default function Students({ onNavigate }: { onNavigate?: (view: string) => void }) {
   const [students, setStudents] = useState<Student[]>([]);
   const [packages, setPackages] = useState<Package[]>([]);
   const [studentPackages, setStudentPackages] = useState<StudentPackage[]>([]);
@@ -174,21 +174,46 @@ export default function Students() {
       const exhausted = studentPackages.filter(sp => sp.studentId === studentId && sp.status === 'exhausted');
       if (exhausted.length > 0) {
         return (
-          <span className="inline-flex items-center px-2 py-0.5 rounded-lg text-[10px] uppercase font-bold tracking-wider font-mono bg-slate-100 text-slate-700 border border-slate-200">
-            Agotado ({exhausted[0].packageName})
-          </span>
+          <div className="space-y-1">
+            <span className="inline-flex items-center px-2 py-0.5 rounded-lg text-[10px] uppercase font-bold tracking-wider font-mono bg-slate-100 text-slate-700 border border-slate-200">
+              Agotado ({exhausted[0].packageName})
+            </span>
+            <button 
+              onClick={() => {
+                localStorage.setItem('open_assign_pkg_for_student_id', studentId);
+                onNavigate?.('payments');
+              }}
+              className="inline-flex items-center gap-1 text-[10px] text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 font-bold px-2 py-0.5 rounded border border-blue-200 mt-1 cursor-pointer transition active:scale-95 text-center"
+            >
+              + Renovar Plan
+            </button>
+          </div>
         );
       }
-      return <span className="text-slate-400 text-xs italic">Sin matrícula activa</span>;
+      return (
+        <div className="space-y-1">
+          <span className="text-slate-400 text-xs italic block">Sin matrícula activa</span>
+          <button 
+            onClick={() => {
+              localStorage.setItem('open_assign_pkg_for_student_id', studentId);
+              onNavigate?.('payments');
+            }}
+            className="inline-flex items-center gap-1 text-[10px] text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 font-bold px-2 py-0.5 rounded border border-blue-200 mt-1 cursor-pointer transition active:scale-95 text-center"
+          >
+            + Asignar Plan
+          </button>
+        </div>
+      );
     }
     
     const pkg = active[0];
     const left = pkg.totalClasses - pkg.classesUsed;
     const isLow = left <= 2;
     const isUnpaid = pkg.amountPaid < pkg.totalPrice;
+    const debt = pkg.totalPrice - pkg.amountPaid;
     
     return (
-      <div className="text-xs space-y-1">
+      <div className="text-xs space-y-1.5">
         <p className="font-bold text-slate-800 font-display">{pkg.packageName}</p>
         <div className="flex items-center gap-1.5 flex-wrap">
           <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold tracking-wide uppercase font-mono ${
@@ -198,8 +223,32 @@ export default function Students() {
           </span>
           {isUnpaid && (
             <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold tracking-wide uppercase font-mono bg-rose-50 border border-rose-150 text-rose-850" title="Saldo pendiente">
-              Debe S/. {pkg.totalPrice - pkg.amountPaid}
+              Debe S/. {debt}
             </span>
+          )}
+        </div>
+        <div className="flex items-center gap-1.5 mt-1">
+          {left > 0 && (
+            <button
+              onClick={() => {
+                localStorage.setItem('open_schedule_class_for_student_id', studentId);
+                onNavigate?.('classes');
+              }}
+              className="inline-flex items-center text-[10px] text-cyan-700 bg-cyan-50 hover:bg-cyan-100 border border-cyan-200 px-1.5 py-0.5 rounded font-bold transition cursor-pointer active:scale-95"
+            >
+              📅 Agendar Clase
+            </button>
+          )}
+          {isUnpaid && (
+            <button
+              onClick={() => {
+                localStorage.setItem('open_payment_for_package_id', pkg.id!);
+                onNavigate?.('payments');
+              }}
+              className="inline-flex items-center text-[10px] text-rose-700 bg-rose-55 hover:bg-rose-100 border border-rose-200 px-1.5 py-0.5 rounded font-bold transition cursor-pointer active:scale-95 animate-pulse"
+            >
+              💵 Cobrar Saldo
+            </button>
           )}
         </div>
       </div>

@@ -359,11 +359,11 @@ export default function App() {
                 transition={{ duration: 0.25, ease: 'easeOut' }}
               >
                 {view === 'dashboard' && <Dashboard onNavigate={setView} />}
-                {view === 'students' && <Students />}
+                {view === 'students' && <Students onNavigate={setView} />}
                 {view === 'instructors' && <Instructors />}
                 {view === 'packages' && <Packages />}
-                {view === 'classes' && <Classes />}
-                {view === 'payments' && <Payments />}
+                {view === 'classes' && <Classes onNavigate={setView} />}
+                {view === 'payments' && <Payments onNavigate={setView} />}
                 {view === 'sheets' && <GoogleSheetsSync />}
                 {view === 'import' && <ImportStudents />}
               </motion.div>
