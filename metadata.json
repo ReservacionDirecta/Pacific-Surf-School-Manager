@@ -1,0 +1,6 @@
+{
+  "name": "Pacific Surf School Manager",
+  "description": "A management application for Pacific Surf School to track student classes, packages, and payments.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

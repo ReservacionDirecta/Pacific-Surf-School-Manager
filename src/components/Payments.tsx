@@ -1,0 +1,680 @@
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { 
+  DollarSign, 
+  Plus, 
+  RotateCw, 
+  Search, 
+  TrendingUp, 
+  Users, 
+  Coins, 
+  QrCode, 
+  Calendar, 
+  HelpCircle, 
+  X, 
+  Briefcase,
+  CreditCard,
+  FileText,
+  AlertCircle,
+  Clock,
+  History,
+  Trash2
+} from 'lucide-react';
+import { StudentPackage, Student, Payment, Package } from '../types';
+import { getStudents, getStudentPackages, updateStudentPackage, addPayment, getPayments, deletePayment, addStudentPackage, getPackages } from '../services/db';
+import { format, parseISO, isBefore } from 'date-fns';
+
+export default function Payments() {
+  const [studentPackages, setStudentPackages] = useState<StudentPackage[]>([]);
+  const [students, setStudents] = useState<Record<string, Student>>({});
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [packages, setPackages] = useState<Package[]>([]);
+  const [loading, setLoading] = useState(true);
+  
+  // Search and filter
+  const [filterStudentName, setFilterStudentName] = useState('');
+
+  // Payment register modal states
+  const [editingPayment, setEditingPayment] = useState<StudentPackage | null>(null);
+  const [newAmount, setNewAmount] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<'Efectivo' | 'Transferencia' | 'Yape' | 'Plin'>('Efectivo');
+  const [paymentNotes, setPaymentNotes] = useState('');
+  const [showHistory, setShowHistory] = useState<string | null>(null); // studentPackageId
+
+  // Assign package modal states
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [assignStudentId, setAssignStudentId] = useState('');
+  const [assignPackageId, setAssignPackageId] = useState('');
+  const [assignAmountPaid, setAssignAmountPaid] = useState('');
+  const [assignNotes, setAssignNotes] = useState('');
+  const [assignDueDate, setAssignDueDate] = useState('');
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const [sData, spData, pData, pkgData] = await Promise.all([
+        getStudents(),
+        getStudentPackages(),
+        getPayments(),
+        getPackages()
+      ]);
+      
+      const studs: Record<string, Student> = {};
+      sData.forEach((s: Student) => { studs[s.id] = s; });
+      setStudents(studs);
+      
+      setStudentPackages(spData);
+      setPayments(pData);
+      setPackages(pkgData);
+    } catch (error) {
+      console.error("Error fetching payments data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const handleUpdatePayment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingPayment) return;
+
+    try {
+      const addedAmount = Number(newAmount) || 0;
+      const updatedAmount = editingPayment.amountPaid + addedAmount;
+      
+      // 1. Add to payment history record
+      await addPayment({
+        studentPackageId: editingPayment.id!,
+        amount: addedAmount,
+        date: new Date().toISOString(),
+        method: paymentMethod,
+        notes: paymentNotes
+      });
+
+      // 2. Update student package
+      await updateStudentPackage(editingPayment.id!, { 
+        amountPaid: updatedAmount
+      });
+      
+      setEditingPayment(null);
+      setNewAmount('');
+      setPaymentNotes('');
+      await fetchData();
+    } catch (error) {
+      console.error("Error updating payment:", error);
+      alert("Error al actualizar el pago");
+    }
+  };
+
+  const handleDeleteHistoryItem = async (id: string, spId: string, amount: number) => {
+    if (!window.confirm('¿Estás seguro de eliminar este registro de pago? Se restará del total pagado del paquete.')) return;
+    
+    try {
+      const sp = studentPackages.find(p => p.id === spId);
+      if (sp) {
+        await updateStudentPackage(spId, { amountPaid: sp.amountPaid - amount });
+      }
+      await deletePayment(id);
+      await fetchData();
+    } catch (error) {
+      console.error("Error deleting payment record:", error);
+    }
+  };
+
+  // Renew / Assign new package to existing student handler
+  const handleAssignPackageSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!assignStudentId || !assignPackageId) {
+      alert("Selecciona un alumno y un paquete.");
+      return;
+    }
+
+    try {
+      const selectedPkg = packages.find(p => p.id === assignPackageId);
+      if (!selectedPkg) return;
+
+      const initialPaid = Number(assignAmountPaid) || 0;
+
+      // 1. Create a new student package entry
+      const spRef = await addStudentPackage({
+        studentId: assignStudentId,
+        packageId: selectedPkg.id!,
+        packageName: selectedPkg.name,
+        amountPaid: initialPaid,
+        totalPrice: selectedPkg.price,
+        classesUsed: 0,
+        totalClasses: selectedPkg.totalClasses,
+        paymentDueDate: assignDueDate || "",
+        status: 'active'
+      });
+
+      // 2. If they paid any initial amount, record the payment history row!
+      if (initialPaid > 0 && spRef && spRef.id) {
+        await addPayment({
+          studentPackageId: spRef.id,
+          amount: initialPaid,
+          date: new Date().toISOString(),
+          method: 'Efectivo',
+          notes: assignNotes || "Pago inicial por renovación de paquete"
+        });
+      }
+
+      setShowAssignModal(false);
+      setAssignStudentId('');
+      setAssignPackageId('');
+      setAssignAmountPaid('');
+      setAssignNotes('');
+      setAssignDueDate('');
+      await fetchData();
+      alert("¡Paquete asignado exitosamente al alumno!");
+    } catch (error) {
+      console.error("Error creating student package:", error);
+      alert("Error al asignar paquete");
+    }
+  };
+
+  const totalCollected = payments.reduce((sum, p) => sum + p.amount, 0);
+  
+  const totalReceivables = studentPackages.reduce((sum, sp) => {
+    if (sp.amountPaid < sp.totalPrice && sp.status === 'active') {
+      return sum + (sp.totalPrice - sp.amountPaid);
+    }
+    return sum;
+  }, 0);
+
+  const collectedByMethod = payments.reduce((acc, p) => {
+    const m = p.method || 'Efectivo';
+    acc[m] = (acc[m] || 0) + p.amount;
+    return acc;
+  }, { 'Efectivo': 0, 'Transferencia': 0, 'Yape': 0, 'Plin': 0 } as Record<string, number>);
+
+  const today = new Date();
+  
+  // Filter pending packages by name
+  const filteredPending = studentPackages.filter(sp => {
+    const student = students[sp.studentId];
+    if (!student) return false;
+    const matchesName = student.name.toLowerCase().includes(filterStudentName.toLowerCase());
+    const isPending = sp.amountPaid < sp.totalPrice;
+    return matchesName && isPending;
+  });
+
+  return (
+    <div className="space-y-6">
+      {/* Header and top buttons */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-6 bg-white rounded-2xl shadow-sm border border-slate-150 gap-4">
+        <div>
+          <h2 className="text-2xl font-extrabold font-display text-slate-100 dark:text-slate-900 tracking-tight">Finanzas y Cobranzas</h2>
+          <p className="text-sm text-slate-400">Arqueo de caja escolar, saldos adeudados, cuotas mensuales y asignación de planes.</p>
+        </div>
+        
+        <div className="flex items-center gap-2.5 w-full sm:w-auto">
+          <button 
+            onClick={() => setShowAssignModal(true)}
+            className="bg-gradient-to-r from-blue-605 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-bold px-4 py-2.5 rounded-xl shadow-md cursor-pointer transition flex items-center gap-1.5 text-xs active:scale-98"
+          >
+            <Plus className="w-4 h-4" />
+            Asignar / Renovar Plan
+          </button>
+          
+          <button 
+            onClick={fetchData}
+            className="p-2.5 border border-slate-200 hover:border-slate-300 text-slate-600 rounded-xl hover:bg-slate-50 transition cursor-pointer"
+            title="Refrescar caja"
+          >
+            <RotateCw className="w-4 h-4 shrink-0" />
+          </button>
+        </div>
+      </div>
+
+      {/* SUMMARY DASHBOARD WIDGETS */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
+        <div className="bg-gradient-to-br from-emerald-50 to-teal-50/50 p-5 rounded-2xl border border-emerald-100 flex items-center justify-between shadow-xs">
+          <div>
+            <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-widest block font-mono">Total Recaudado</span>
+            <span className="text-2xl font-black text-emerald-990 tracking-tight mt-1 block font-display">S/. {totalCollected.toFixed(2)}</span>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
+            S/.
+          </div>
+        </div>
+
+        <div className="bg-gradient-to-br from-rose-50 to-rose-100/30 p-5 rounded-2xl border border-rose-100 flex items-center justify-between shadow-xs">
+          <div>
+            <span className="text-[10px] font-bold text-rose-800 uppercase tracking-widest block font-mono">Por Cobrar (Saldos)</span>
+            <span className="text-2xl font-black text-rose-990 tracking-tight mt-1 block font-display text-rose-600">S/. {totalReceivables.toFixed(2)}</span>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center font-bold">
+            Cobro
+          </div>
+        </div>
+
+        <div className="bg-white p-5 rounded-2xl border border-slate-150 col-span-1 md:col-span-2">
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block font-mono mb-2.5">Recaudación por Método</span>
+          <div className="grid grid-cols-4 gap-2 text-center">
+            <div className="bg-emerald-50/50 p-2 rounded-xl border border-emerald-100">
+              <span className="text-[9px] text-emerald-800 font-bold block uppercase tracking-wide">Efectivo</span>
+              <span className="text-xs font-bold text-slate-900 mt-0.5 block font-mono">S/. {collectedByMethod['Efectivo'] || 0}</span>
+            </div>
+            <div className="bg-blue-50/50 p-2 rounded-xl border border-blue-100">
+              <span className="text-[9px] text-blue-805 font-bold block uppercase tracking-wide">Banco</span>
+              <span className="text-xs font-bold text-slate-900 mt-0.5 block font-mono">S/. {collectedByMethod['Transferencia'] || 0}</span>
+            </div>
+            <div className="bg-purple-50/50 p-2 rounded-xl border border-purple-100">
+              <span className="text-[9px] text-purple-800 font-bold block uppercase tracking-wide">Yape</span>
+              <span className="text-xs font-bold text-slate-900 mt-0.5 block font-mono">S/. {collectedByMethod['Yape'] || 0}</span>
+            </div>
+            <div className="bg-cyan-50/50 p-2 rounded-xl border border-cyan-100">
+              <span className="text-[9px] text-cyan-800 font-bold block uppercase tracking-wide">Plin</span>
+              <span className="text-xs font-bold text-slate-900 mt-0.5 block font-mono">S/. {collectedByMethod['Plin'] || 0}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* FILTER SEARCH FIELD */}
+      <div className="bg-white p-4 rounded-2xl border border-slate-150 flex gap-4 items-center">
+        <div className="relative flex-1 md:max-w-md">
+          <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400">
+            <Search className="w-4 h-4" />
+          </span>
+          <input 
+            type="text" 
+            placeholder="Escribe el nombre del alumno para buscar deudas..." 
+            value={filterStudentName}
+            onChange={e => setFilterStudentName(e.target.value)}
+            className="w-full rounded-xl border border-slate-205 text-slate-800 pl-10 pr-4 py-2.5 sm:text-xs focus:border-cyan-500 outline-none transition bg-slate-50/30 focus:bg-white"
+          />
+        </div>
+      </div>
+
+      {/* MAIN SALDOS table */}
+      <div className="bg-white rounded-2xl shadow-sm overflow-hidden border border-slate-150 overflow-x-auto">
+        <div className="px-6 py-4 border-b border-slate-150 bg-slate-50/50 flex justify-between items-center">
+          <h3 className="text-xs font-bold text-slate-650 uppercase tracking-widest font-mono">Saldos Deudores de Alumnos (Cobros Pendientes)</h3>
+          <span className="bg-rose-50 border border-rose-150 text-rose-700 text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider font-mono">
+            {filteredPending.length} pendientes
+          </span>
+        </div>
+        
+        <table className="min-w-full divide-y divide-slate-150">
+          <thead className="bg-slate-50/10">
+            <tr>
+              <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-widest font-mono">Alumno</th>
+              <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-widest font-mono">Paquete de surf</th>
+              <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-widest font-mono">Precio Total</th>
+              <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-widest font-mono">Abonado</th>
+              <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-widest font-mono">Saldo Deuda</th>
+              <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-widest font-mono">Límite Pago</th>
+              <th className="px-6 py-3.5 text-right text-xs font-bold text-slate-400 uppercase tracking-widest font-mono">Acciones</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-slate-150">
+            {filteredPending.map(sp => {
+              const student = students[sp.studentId];
+              const pending = sp.totalPrice - sp.amountPaid;
+              const isDue = sp.paymentDueDate && isBefore(parseISO(sp.paymentDueDate), today);
+
+              return (
+                <tr key={sp.id} className="hover:bg-slate-50/50 transition">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-bold text-slate-900 font-display">{student?.name || 'Pasajero no registrado'}</div>
+                    <div className="text-[10px] text-slate-400 font-mono">{student?.phone || 'Sin cel'}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-650">
+                    {sp.packageName}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900 font-bold font-mono">
+                    S/. {sp.totalPrice}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-emerald-600 font-semibold font-mono">
+                    S/. {sp.amountPaid}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-rose-600 font-extrabold bg-rose-50/20 font-mono">
+                    S/. {pending}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    {sp.paymentDueDate ? (
+                      <span className={isDue ? 'text-rose-600 font-extrabold inline-flex items-center gap-1 font-mono text-[11px]' : 'text-slate-500 font-mono text-[11px]'}>
+                        {isDue && <span className="w-1.5 h-1.5 rounded-full bg-red-650 animate-pulse"></span>}
+                        {sp.paymentDueDate}
+                      </span>
+                    ) : (
+                      <span className="text-slate-400 italic text-xs">-</span>
+                    )}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-bold space-x-3">
+                    <button 
+                      onClick={() => setEditingPayment(sp)}
+                      className="text-blue-600 hover:text-blue-700 transition cursor-pointer hover:underline"
+                    >
+                      Abonar Pago
+                    </button>
+                    <button 
+                      onClick={() => setShowHistory(sp.id!)}
+                      className="text-slate-450 hover:text-slate-800 transition cursor-pointer hover:underline"
+                    >
+                      Ver Historial
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+            {filteredPending.length === 0 && !loading && (
+              <tr>
+                <td colSpan={7} className="px-6 py-10 text-center text-sm text-slate-400 bg-slate-50/55 italic">No hay saldos deudores registrados. ¡Todo está al día!</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* ALL COMPLETED PACKAGES TABLE */}
+      <div className="bg-white rounded-2xl border border-slate-150 overflow-hidden">
+        <div className="px-6 py-3.5 border-b border-slate-150 bg-slate-50/50">
+          <h3 className="text-xs font-bold text-slate-650 uppercase tracking-widest font-mono">Matrículas Saldadas Totalmente</h3>
+        </div>
+        <div className="max-h-60 overflow-y-auto">
+          <table className="min-w-full divide-y divide-slate-150 text-sm">
+            <tbody className="bg-white divide-y divide-slate-150">
+              {studentPackages.filter(sp => sp.amountPaid >= sp.totalPrice).map(sp => (
+                <tr key={sp.id} className="hover:bg-slate-50/20">
+                  <td className="px-6 py-3 whitespace-nowrap font-bold text-slate-850 font-display text-sm">{students[sp.studentId]?.name || 'Pasajero matrícula libre'}</td>
+                  <td className="px-6 py-3 whitespace-nowrap text-slate-500 text-xs">{sp.packageName}</td>
+                  <td className="px-6 py-3 whitespace-nowrap font-bold text-emerald-600 text-xs">S/. {sp.totalPrice} • Completo</td>
+                  <td className="px-6 py-3 whitespace-nowrap text-right">
+                    <button onClick={() => setShowHistory(sp.id!)} className="text-blue-600 text-xs font-bold hover:underline cursor-pointer">Revisar Libreta</button>
+                  </td>
+                </tr>
+              ))}
+              {studentPackages.filter(sp => sp.amountPaid >= sp.totalPrice).length === 0 && (
+                <tr>
+                  <td className="px-6 py-5 text-center text-slate-400 italic text-xs">No hay historial de paquetes cobrados.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* RECORD INDIVIDUAL TRANSACTION MODAL */}
+      {editingPayment && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm border border-slate-100"
+          >
+            <div className="flex justify-between items-center border-b border-slate-100 pb-3.5 mb-4">
+              <h3 className="text-lg font-bold text-slate-900 font-display">Abonar Dinero</h3>
+              <button 
+                onClick={() => setEditingPayment(null)}
+                className="p-1 rounded-lg text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="text-xs text-slate-705 mb-4 bg-slate-50 border border-slate-150 p-3.5 rounded-xl space-y-1 leading-relaxed">
+              <p>Alumno: <span className="font-bold text-slate-900 font-display">{students[editingPayment.studentId]?.name}</span></p>
+              <p>Paquete: <span className="font-bold text-slate-900 font-display">{editingPayment.packageName}</span></p>
+              <p>Saldo Pendiente: <span className="font-black text-rose-600 font-mono">S/. {editingPayment.totalPrice - editingPayment.amountPaid}</span></p>
+            </div>
+            
+            <form onSubmit={handleUpdatePayment} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Monto a Abonar (S/.) *</label>
+                <input 
+                  required 
+                  type="text" 
+                  value={newAmount} 
+                  onChange={e => {
+                    const val = e.target.value;
+                    if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                      setNewAmount(val);
+                    }
+                  }} 
+                  className="mt-1 block w-full rounded-xl border border-slate-205 text-slate-850 px-3.5 py-2.5 font-bold focus:border-cyan-500 outline-none transition bg-slate-50 focus:bg-white text-lg" 
+                  placeholder="0.00"
+                  autoFocus
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Método de Cobro *</label>
+                <select 
+                  value={paymentMethod}
+                  onChange={e => setPaymentMethod(e.target.value as any)}
+                  className="mt-1 block w-full rounded-xl border border-slate-200 text-slate-805 bg-white px-3.5 py-2.5 sm:text-sm focus:border-cyan-500 outline-none transition"
+                >
+                  <option value="Efectivo">💵 Efectivo</option>
+                  <option value="Transferencia">🏦 Transferencia Bancaria</option>
+                  <option value="Yape">📱 Yape</option>
+                  <option value="Plin">📱 Plin</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Notas de Referencia</label>
+                <input 
+                  type="text" 
+                  value={paymentNotes} 
+                  onChange={e => setPaymentNotes(e.target.value)} 
+                  className="mt-1 block w-full rounded-xl border border-slate-200 text-slate-850 px-3.5 py-2.5 sm:text-sm focus:border-cyan-500 outline-none transition" 
+                  placeholder="Ej: Código de Operación o Yape"
+                />
+              </div>
+              
+              <div className="flex justify-end space-x-3 pt-4 border-t border-slate-100">
+                <button 
+                  type="button" 
+                  onClick={() => setEditingPayment(null)} 
+                  className="px-4 py-2 border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 text-sm font-semibold cursor-pointer transition"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  type="submit" 
+                  className="px-5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold rounded-xl text-sm shadow-md cursor-pointer transition active:scale-98"
+                >
+                  Registrar Abono
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      )}
+
+      {/* RENEW / ASSIGN PACKAGE TO EXISTING STUDENT MODAL */}
+      {showAssignModal && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm border border-slate-100"
+          >
+            <div className="flex justify-between items-center border-b border-slate-100 pb-3.5 mb-4">
+              <h3 className="text-lg font-bold text-slate-900 font-display">Asignar Plan Académico</h3>
+              <button 
+                onClick={() => setShowAssignModal(false)}
+                className="p-1 rounded-lg text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <form onSubmit={handleAssignPackageSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Seleccionar Alumno *</label>
+                <select 
+                  required 
+                  value={assignStudentId} 
+                  onChange={e => setAssignStudentId(e.target.value)}
+                  className="mt-1 block w-full rounded-xl border border-slate-200 text-slate-805 bg-white px-3.5 py-2.5 sm:text-sm focus:border-cyan-500 outline-none transition"
+                >
+                  <option value="">-- Elige un Alumno --</option>
+                  {Object.values(students).map((s: any) => (
+                    <option key={s.id} value={s.id}>{s.name} ({s.phone || 'sin telf'})</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Seleccionar Paquete de Clases *</label>
+                <select 
+                  required 
+                  value={assignPackageId} 
+                  onChange={e => setAssignPackageId(e.target.value)}
+                  className="mt-1 block w-full rounded-xl border border-slate-200 text-slate-805 bg-white px-3.5 py-2.5 sm:text-sm focus:border-cyan-500 outline-none transition"
+                >
+                  <option value="">-- Elige un Paquete --</option>
+                  {packages.map(p => (
+                    <option key={p.id} value={p.id}>{p.name} (S/. {p.price} - {p.totalClasses} clases)</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Pago Inicial (S/.)</label>
+                  <input 
+                    type="text" 
+                    placeholder="0"
+                    value={assignAmountPaid} 
+                    onChange={e => {
+                      const val = e.target.value;
+                      if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                        setAssignAmountPaid(val);
+                      }
+                    }} 
+                    className="mt-1 block w-full rounded-xl border border-slate-200 text-slate-805 px-3.5 py-2.5 sm:text-xs focus:border-cyan-500 outline-none transition" 
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Límite Pago Deuda</label>
+                  <input 
+                    type="date" 
+                    value={assignDueDate} 
+                    onChange={e => setAssignDueDate(e.target.value)}
+                    className="mt-1 block w-full rounded-xl border border-slate-200 text-slate-805 px-3.5 py-2.5 sm:text-xs focus:border-cyan-500 outline-none transition" 
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Comentarios Venta</label>
+                <input 
+                  type="text" 
+                  value={assignNotes} 
+                  onChange={e => setAssignNotes(e.target.value)}
+                  className="mt-1 block w-full rounded-xl border border-slate-200 text-slate-850 px-3.5 py-2.5 sm:text-sm focus:border-cyan-500 outline-none transition" 
+                  placeholder="Ej: Pago anticipado en efectivo"
+                />
+              </div>
+
+              <div className="flex justify-end space-x-3 pt-4 border-t border-slate-100">
+                <button 
+                  type="button" 
+                  onClick={() => setShowAssignModal(false)}
+                  className="px-4 py-2 border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 text-sm font-semibold cursor-pointer transition"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  type="submit" 
+                  className="px-5 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-bold rounded-xl text-sm shadow-md cursor-pointer transition active:scale-98"
+                >
+                  Matricular Alumno
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      )}
+
+      {/* VIEW PAYMENT INSTALMENTS HISTORY MODAL */}
+      {showHistory && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-lg border border-slate-100"
+          >
+            <div className="flex justify-between items-center mb-4 border-b border-slate-100 pb-3">
+              <h3 className="text-base font-bold text-slate-900 font-display flex items-center gap-1.5">
+                <History className="w-5 h-5 text-indigo-500" />
+                Historial de Registro de Pagos
+              </h3>
+              <button 
+                onClick={() => setShowHistory(null)}
+                className="p-1 rounded-lg text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="overflow-x-auto min-h-40 max-h-80 overflow-y-auto">
+              <table className="min-w-full divide-y divide-slate-150">
+                <thead className="bg-slate-50/80 text-slate-400 font-bold uppercase text-[10px] tracking-widest font-mono">
+                  <tr>
+                    <th className="px-4 py-2 text-left">Fecha Registro</th>
+                    <th className="px-4 py-2 text-left">Monto Recibido</th>
+                    <th className="px-4 py-2 text-left">Método</th>
+                    <th className="px-4 py-2 text-left">Detalles Op.</th>
+                    <th className="px-4 py-2 text-right">Anular</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-150 text-slate-700 text-xs">
+                  {payments
+                    .filter(p => p.studentPackageId === showHistory)
+                    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                    .map(p => (
+                      <tr key={p.id} className="hover:bg-slate-50/50">
+                        <td className="px-4 py-3 font-mono text-[11px]">{format(parseISO(p.date), 'dd/MM/yyyy HH:mm')}</td>
+                        <td className="px-4 py-3 font-bold text-slate-900 font-mono">S/. {p.amount}</td>
+                        <td className="px-4 py-3">
+                          <span className={`px-2 py-0.5 rounded-lg text-[9px] font-bold uppercase font-mono tracking-wide
+                            ${p.method === 'Efectivo' ? 'bg-emerald-55/60 text-emerald-800' : 
+                              p.method === 'Yape' ? 'bg-purple-100 text-purple-800' : 
+                              p.method === 'Plin' ? 'bg-cyan-100 text-cyan-800' : 
+                              'bg-slate-100 text-slate-800'}`}>
+                            {p.method}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-slate-405 italic">{p.notes || '-'}</td>
+                        <td className="px-4 py-3 text-right">
+                          <button 
+                            onClick={() => handleDeleteHistoryItem(p.id!, p.studentPackageId, p.amount)} 
+                            className="text-red-500 hover:text-red-700 p-1 rounded-lg hover:bg-red-50 cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  {payments.filter(p => p.studentPackageId === showHistory).length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="px-4 py-8 text-center text-slate-400 italic">No se han registrado pagos parciales para este paquete.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+            
+            <div className="mt-5 flex justify-end">
+              <button 
+                onClick={() => setShowHistory(null)} 
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs cursor-pointer transition"
+              >
+                Cerrar Libreta
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </div>
+  );
+}

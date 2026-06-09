@@ -1,0 +1,93 @@
+{
+  "entities": {
+    "Student": {
+      "title": "Student",
+      "description": "A student enrolled in the surf school.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "The name of the student." },
+        "email": { "type": "string", "format": "email", "description": "The email of the student." },
+        "phone": { "type": "string", "description": "Phone number." },
+        "age": { "type": "number", "description": "Age of the student." },
+        "hasBoard": { "type": "string", "description": "Does the student have a board? (Si/No/En proceso)" },
+        "parentsName": { "type": "string", "description": "Names of the parents." },
+        "birthDate": { "type": "string", "description": "Birth date (DD/MM/YYYY)." },
+        "enrollmentDate": { "type": "string", "description": "Enrollment date (DD/MM/YYYY)." }
+      },
+      "required": ["name"]
+    },
+    "Instructor": {
+      "title": "Instructor",
+      "description": "A surf instructor.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "The name of the instructor." },
+        "email": { "type": "string", "format": "email", "description": "The email of the instructor." },
+        "phone": { "type": "string", "description": "Phone number." }
+      },
+      "required": ["name"]
+    },
+    "Package": {
+      "title": "Package",
+      "description": "A surf class package.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Name of the package." },
+        "totalClasses": { "type": "number", "description": "Total classes included." },
+        "price": { "type": "number", "description": "Price of the package." }
+      },
+      "required": ["name", "totalClasses", "price"]
+    },
+    "StudentPackage": {
+      "title": "StudentPackage",
+      "description": "A package purchased by a student.",
+      "type": "object",
+      "properties": {
+        "studentId": { "type": "string", "description": "ID of the student." },
+        "packageId": { "type": "string", "description": "ID of the package." },
+        "packageName": { "type": "string", "description": "Name of the package for denormalization." },
+        "amountPaid": { "type": "number", "description": "Amount paid so far." },
+        "totalPrice": { "type": "number", "description": "Total price of the package." },
+        "classesUsed": { "type": "number", "description": "Classes used." },
+        "totalClasses": { "type": "number", "description": "Total classes allowed." },
+        "paymentDueDate": { "type": "string", "format": "date", "description": "Due date for next payment (YYYY-MM-DD)." },
+        "status": { "type": "string", "enum": ["active", "exhausted", "expired"], "description": "Status of the package." }
+      },
+      "required": ["studentId", "packageId", "amountPaid", "totalPrice", "classesUsed", "totalClasses", "status"]
+    },
+    "Class": {
+      "title": "Class",
+      "description": "A scheduled surf class.",
+      "type": "object",
+      "properties": {
+        "date": { "type": "string", "description": "Date and time of the class (ISO string)." },
+        "studentId": { "type": "string", "description": "ID of the student." },
+        "instructorId": { "type": "string", "description": "ID of the instructor." },
+        "status": { "type": "string", "enum": ["scheduled", "completed", "cancelled"], "description": "Status of the class." }
+      },
+      "required": ["date", "studentId", "instructorId", "status"]
+    }
+  },
+  "firestore": {
+    "/students/{studentId}": {
+      "schema": { "$ref": "Student" },
+      "description": "Collection of students."
+    },
+    "/instructors/{instructorId}": {
+      "schema": { "$ref": "Instructor" },
+      "description": "Collection of instructors."
+    },
+    "/packages/{packageId}": {
+      "schema": { "$ref": "Package" },
+      "description": "Collection of available packages."
+    },
+    "/studentPackages/{studentPackageId}": {
+      "schema": { "$ref": "StudentPackage" },
+      "description": "Collection of packages purchased by students."
+    },
+    "/classes/{classId}": {
+      "schema": { "$ref": "Class" },
+      "description": "Collection of scheduled classes."
+    }
+  }
+}
