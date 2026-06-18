@@ -225,16 +225,20 @@ export default function Payments({ onNavigate }: { onNavigate?: (view: string) =
   return (
     <div className="space-y-6">
       {/* Header and top buttons */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-6 bg-white rounded-2xl shadow-sm border border-slate-150 gap-4">
-        <div>
-          <h2 className="text-2xl font-extrabold font-display text-slate-100 dark:text-slate-900 tracking-tight">Finanzas y Cobranzas</h2>
-          <p className="text-sm text-slate-400">Arqueo de caja escolar, saldos adeudados, cuotas mensuales y asignación de planes.</p>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-6 bg-gradient-to-r from-slate-900 to-slate-800 rounded-2xl shadow-md border border-slate-700 gap-4 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-48 h-48 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div className="relative z-10">
+          <div className="flex items-center gap-2 text-cyan-400 text-xs font-mono font-bold tracking-widest uppercase mb-1">
+            <DollarSign className="w-4 h-4 text-cyan-400" /> Control Financiero
+          </div>
+          <h2 className="text-2xl font-extrabold font-display text-white tracking-tight">Finanzas y Cobranzas</h2>
+          <p className="text-sm text-slate-300">Arqueo de caja escolar, saldos adeudados, cuotas mensuales y asignación de planes.</p>
         </div>
         
-        <div className="flex items-center gap-2.5 w-full sm:w-auto">
+        <div className="flex items-center gap-2.5 w-full sm:w-auto relative z-10">
           <button 
             onClick={() => setShowAssignModal(true)}
-            className="bg-gradient-to-r from-blue-605 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-bold px-4 py-2.5 rounded-xl shadow-md cursor-pointer transition flex items-center gap-1.5 text-xs active:scale-98"
+            className="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-extrabold px-5 py-2.5 rounded-xl shadow-lg cursor-pointer transition flex items-center gap-1.5 text-xs active:scale-98"
           >
             <Plus className="w-4 h-4" />
             Asignar / Renovar Plan
@@ -242,7 +246,7 @@ export default function Payments({ onNavigate }: { onNavigate?: (view: string) =
           
           <button 
             onClick={fetchData}
-            className="p-2.5 border border-slate-200 hover:border-slate-300 text-slate-600 rounded-xl hover:bg-slate-50 transition cursor-pointer"
+            className="p-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 text-slate-300 hover:text-white rounded-xl transition cursor-pointer"
             title="Refrescar caja"
           >
             <RotateCw className="w-4 h-4 shrink-0" />
@@ -498,7 +502,7 @@ export default function Payments({ onNavigate }: { onNavigate?: (view: string) =
                 </button>
                 <button 
                   type="submit" 
-                  className="px-5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold rounded-xl text-sm shadow-md cursor-pointer transition active:scale-98"
+                  className="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold rounded-xl text-xs shadow-lg shadow-emerald-500/10 cursor-pointer transition active:scale-98"
                 >
                   Registrar Abono
                 </button>
@@ -605,7 +609,7 @@ export default function Payments({ onNavigate }: { onNavigate?: (view: string) =
                 </button>
                 <button 
                   type="submit" 
-                  className="px-5 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-bold rounded-xl text-sm shadow-md cursor-pointer transition active:scale-98"
+                  className="px-5 py-2.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-extrabold rounded-xl text-xs shadow-lg shadow-cyan-500/10 cursor-pointer transition active:scale-98"
                 >
                   Matricular Alumno
                 </button>

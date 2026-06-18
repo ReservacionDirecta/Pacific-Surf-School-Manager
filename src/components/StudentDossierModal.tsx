@@ -669,8 +669,8 @@ export default function StudentDossierModal({ student, isOpen, onClose, onDataCh
                         {pkgFormError && <p className="text-red-500 font-bold text-[10px]">{pkgFormError}</p>}
 
                         <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
-                          <button type="button" onClick={() => setShowAssignPackage(false)} className="px-3 py-2 border border-slate-200 rounded-xl font-medium">Cancelar</button>
-                          <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-500">Completar Matrícula</button>
+                          <button type="button" onClick={() => setShowAssignPackage(false)} className="px-3 py-2.5 border border-slate-200 rounded-xl text-xs font-semibold hover:bg-slate-50 transition cursor-pointer">Cancelar</button>
+                          <button type="submit" className="px-5 py-2.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-extrabold rounded-xl text-xs shadow-lg shadow-cyan-500/10 cursor-pointer transition">Completar Matrícula</button>
                         </div>
                       </form>
                     </motion.div>
@@ -792,8 +792,8 @@ export default function StudentDossierModal({ student, isOpen, onClose, onDataCh
                                 {payFormError && <p className="text-red-500 font-bold font-mono text-[10px]">{payFormError}</p>}
 
                                 <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
-                                  <button type="button" onClick={() => setScoringPaymentSpId(null)} className="px-3.5 py-1.5 border border-slate-200 rounded-lg font-medium">Cancelar</button>
-                                  <button type="submit" className="px-4 py-1.5 bg-emerald-600 text-white rounded-lg font-bold hover:bg-emerald-500">Registrar</button>
+                                  <button type="button" onClick={() => setScoringPaymentSpId(null)} className="px-3.5 py-1.5 border border-slate-200 rounded-xl text-xs font-semibold hover:bg-slate-50 transition cursor-pointer">Cancelar</button>
+                                  <button type="submit" className="px-5 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold rounded-xl text-xs shadow-md shadow-emerald-500/10 cursor-pointer transition">Registrar</button>
                                 </div>
                               </form>
                             </motion.div>

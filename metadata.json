@@ -1,6 +1,6 @@
 {
   "name": "Pacific Surf School Manager",
-  "description": "A management application for Pacific Surf School to track student classes, packages, and payments.",
+  "description": "Sistema de administración integral para Pacific Surf School. Permite el control detallado de expedientes de alumnos, programación de clases presenciales, cobro de saldos y control de deudas con sincronización bi-direccional fluida con Google Sheets.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

@@ -297,29 +297,33 @@ export default function Classes({ onNavigate }: { onNavigate?: (view: string) =>
   return (
     <div className="space-y-6">
       {/* Header with Switcher Tabs */}
-      <div className="flex flex-col md:flex-row justify-between md:items-center p-6 bg-white rounded-2xl shadow-sm border border-slate-150 gap-4">
-        <div>
-          <h2 className="text-2xl font-extrabold font-display text-slate-100 dark:text-slate-900 tracking-tight">Control de Agenda y Clases</h2>
-          <p className="text-sm text-slate-400">Coordinación en tiempo real de instructores, asistencia escolar y reportes de clases.</p>
+      <div className="flex flex-col md:flex-row justify-between md:items-center p-6 bg-gradient-to-r from-slate-900 via-slate-800 to-cyan-950 rounded-2xl shadow-md border border-slate-700 gap-4 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-48 h-48 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div className="relative z-10">
+          <div className="flex items-center gap-2 text-cyan-400 text-xs font-mono font-bold tracking-widest uppercase mb-1">
+            <Calendar className="w-4 h-4 text-cyan-400" /> Agenda de Clases
+          </div>
+          <h2 className="text-2xl font-extrabold font-display text-white tracking-tight">Control de Sesiones</h2>
+          <p className="text-sm text-slate-300">Coordinación en tiempo real de instructores, asistencia de alumnos y sincronización.</p>
         </div>
 
         {/* Tab switcher tabs */}
-        <div className="flex bg-slate-100/80 p-1 rounded-xl border border-slate-205 text-xs select-none self-start">
+        <div className="flex bg-slate-800/80 p-1.5 rounded-xl border border-slate-700 text-xs select-none self-start relative z-10">
           <button
             onClick={() => setCurrentTab('system')}
-            className={`px-4 py-2 rounded-lg font-bold tracking-wide transition cursor-pointer ${
-              currentTab === 'system' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-700'
+            className={`px-4 py-2.5 rounded-lg font-bold tracking-wide transition cursor-pointer flex items-center gap-1.5 ${
+              currentTab === 'system' ? 'bg-cyan-500 text-slate-950 shadow-sm' : 'text-slate-300 hover:text-white'
             }`}
           >
             Clases en Sistema (SQLite)
           </button>
           <button
             onClick={() => setCurrentTab('sheets')}
-            className={`px-4 py-2 rounded-lg font-bold tracking-wide transition cursor-pointer ${
-              currentTab === 'sheets' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-400 hover:text-slate-700'
+            className={`px-4 py-2.5 rounded-lg font-bold tracking-wide transition cursor-pointer flex items-center gap-1.5 ${
+              currentTab === 'sheets' ? 'bg-emerald-500 text-slate-950 shadow-sm' : 'text-slate-300 hover:text-white'
             }`}
           >
-            Historial de Google Sheets
+            Google Sheets Live
           </button>
         </div>
       </div>

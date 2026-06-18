@@ -106,23 +106,27 @@ export default function Packages() {
   return (
     <div className="space-y-6">
       {/* Header Panel */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-6 bg-white rounded-2xl shadow-sm border border-slate-150 gap-4">
-        <div>
-          <h2 className="text-2xl font-extrabold font-display text-slate-100 dark:text-slate-900 tracking-tight">Catálogo de Paquetes</h2>
-          <p className="text-sm text-slate-400">Planes oficiales de instrucción grupal y personalizada de Pacific Surf.</p>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-6 bg-gradient-to-r from-slate-900 to-slate-800 rounded-2xl shadow-md border border-slate-700 gap-4 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-48 h-48 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div className="relative z-10">
+          <div className="flex items-center gap-2 text-cyan-400 text-xs font-mono font-bold tracking-widest uppercase mb-1">
+            <PackageIcon className="w-4 h-4 text-cyan-450" /> Programas de Instrucción
+          </div>
+          <h2 className="text-2xl font-extrabold font-display text-white tracking-tight">Catálogo de Paquetes</h2>
+          <p className="text-sm text-slate-300">Planes oficiales de instrucción grupal, personalizada y alquileres de Pacific Surf.</p>
         </div>
-        <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
+        <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto relative z-10">
           <button 
             onClick={injectInitialPackages}
-            className="bg-slate-50 border border-slate-200 text-slate-700 font-bold px-4 py-2.5 rounded-xl text-xs cursor-pointer hover:bg-slate-100 hover:border-slate-300 transition flex items-center gap-1.5 active:scale-98"
+            className="bg-slate-800 text-slate-300 border border-slate-700 font-bold px-4 py-2.5 rounded-xl text-xs cursor-pointer hover:bg-slate-700 hover:text-white transition flex items-center gap-1.5 active:scale-98"
           >
-            <DatabaseZap className="w-4 h-4 text-slate-505" />
+            <DatabaseZap className="w-4 h-4 text-cyan-400" />
             Cargar Catálogo Inicial
           </button>
           
           <button 
             onClick={() => setShowAddModal(true)}
-            className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-bold px-4 py-2.5 rounded-xl shadow-md cursor-pointer transition flex items-center gap-1.5 text-xs active:scale-98"
+            className="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-extrabold px-5 py-2.5 rounded-xl shadow-lg cursor-pointer transition flex items-center gap-1.5 text-xs active:scale-98"
           >
             <Plus className="w-4.5 h-4.5" />
             Nuevo Plan

@@ -86,16 +86,20 @@ export default function Instructors() {
   return (
     <div className="space-y-6">
       {/* Header Panel */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-6 bg-white rounded-2xl shadow-sm border border-slate-150 gap-4">
-        <div>
-          <h2 className="text-2xl font-extrabold font-display text-slate-900 tracking-tight font-display">Staff de Coaches</h2>
-          <p className="text-sm text-slate-400">Coordinación de instructores oficiales para clases diarias y control de asistencia.</p>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-6 bg-gradient-to-r from-slate-900 to-slate-800 rounded-2xl shadow-md border border-slate-700 gap-4 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-48 h-48 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div className="relative z-10">
+          <div className="flex items-center gap-2 text-cyan-400 text-xs font-mono font-bold tracking-widest uppercase mb-1">
+            <Briefcase className="w-4 h-4 text-cyan-400" /> Plantilla Deportiva
+          </div>
+          <h2 className="text-2xl font-extrabold font-display text-white tracking-tight">Staff de Coaches</h2>
+          <p className="text-sm text-slate-300">Coordinación de instructores oficiales para clases diarias y control de asistencia.</p>
         </div>
         <button 
           onClick={handleOpenAddModal}
-          className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-bold px-4 py-2.5 rounded-xl shadow-md cursor-pointer transition flex items-center gap-2 text-sm active:scale-98"
+          className="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-extrabold px-5 py-3 rounded-xl shadow-lg cursor-pointer transition flex items-center gap-2 text-sm z-10 hover:translate-y-[-1px]"
         >
-          <UserPlus className="w-4.5 h-4.5" />
+          <UserPlus className="w-5 h-5" />
           Registrar Coach
         </button>
       </div>

@@ -231,7 +231,7 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (view: string) 
             ) : (
               <button
                 onClick={() => onNavigate?.('sheets')}
-                className="bg-blue-600 hover:bg-blue-500 text-white font-bold px-3 py-2 rounded-lg text-xs cursor-pointer transition shadow"
+                className="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-extrabold px-3.5 py-2.5 rounded-xl text-xs cursor-pointer transition shadow-lg shadow-cyan-500/10 hover:translate-y-[-0.5px]"
               >
                 Vincular Google Sheets
               </button>
@@ -269,66 +269,70 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (view: string) 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Total Collected */}
         <motion.div 
-          whileHover={{ y: -3, scale: 1.01 }}
+          whileHover={{ y: -4, shadow: "0 10px 15px -3px rgba(16, 185, 129, 0.1), 0 4px 6px -2px rgba(16, 185, 129, 0.05)" }}
           onClick={() => onNavigate?.('payments')}
-          className="bg-white p-5 rounded-xl shadow-sm border border-slate-100 cursor-pointer hover:shadow-md transition-all flex items-center justify-between"
+          className="bg-white p-5 rounded-2xl border border-slate-100 hover:border-emerald-200 cursor-pointer transition-all flex items-center justify-between shadow-xs relative overflow-hidden"
         >
-          <div className="space-y-1">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full blur-2xl pointer-events-none"></div>
+          <div className="space-y-1 relative z-10">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block font-mono">Recaudado Caja</span>
-            <span className="text-2xl font-extrabold text-emerald-600 mt-1 block font-display">S/. {totalRecaudado.toFixed(2)}</span>
-            <span className="text-[11px] text-slate-400 inline-flex items-center gap-1">Registros de cobro <ChevronRight className="w-3 h-3" /></span>
+            <span className="text-2xl font-black text-slate-900 mt-1 block font-display">S/. {totalRecaudado.toFixed(2)}</span>
+            <span className="text-[11px] text-emerald-600 hover:text-emerald-700 font-semibold inline-flex items-center gap-0.5">Registros de cobro <ChevronRight className="w-3 h-3" /></span>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-emerald-50/80 text-emerald-600 flex items-center justify-center font-bold text-lg shadow-sm border border-emerald-100">
+          <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-black text-base border border-emerald-100 relative z-10 shadow-xs">
             S/.
           </div>
         </motion.div>
 
         {/* Total Students */}
         <motion.div 
-          whileHover={{ y: -3, scale: 1.01 }}
+          whileHover={{ y: -4, shadow: "0 10px 15px -3px rgba(59, 130, 246, 0.1), 0 4px 6px -2px rgba(59, 130, 246, 0.05)" }}
           onClick={() => onNavigate?.('students')}
-          className="bg-white p-5 rounded-xl shadow-sm border border-slate-100 cursor-pointer hover:shadow-md transition-all flex items-center justify-between"
+          className="bg-white p-5 rounded-2xl border border-slate-100 hover:border-blue-200 cursor-pointer transition-all flex items-center justify-between shadow-xs relative overflow-hidden"
         >
-          <div className="space-y-1">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-full blur-2xl pointer-events-none"></div>
+          <div className="space-y-1 relative z-10">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block font-mono">Alumnos Activos</span>
-            <span className="text-2xl font-extrabold text-blue-600 mt-1 block font-display">{totalStudentsCount} surfers</span>
-            <span className="text-[11px] text-slate-400 inline-flex items-center gap-1">Ver directorio <ChevronRight className="w-3 h-3" /></span>
+            <span className="text-2xl font-black text-slate-900 mt-1 block font-display">{totalStudentsCount} surfers</span>
+            <span className="text-[11px] text-blue-600 hover:text-blue-700 font-semibold inline-flex items-center gap-0.5">Ver directorio <ChevronRight className="w-3 h-3" /></span>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-blue-50/80 text-blue-600 flex items-center justify-center shadow-sm border border-blue-100">
+          <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100 relative z-10 shadow-xs">
             <Users className="w-5 h-5" />
           </div>
         </motion.div>
 
         {/* Board usage distribution stats */}
         <motion.div 
-          whileHover={{ y: -3, scale: 1.01 }}
+          whileHover={{ y: -4, shadow: "0 10px 15px -3px rgba(6, 182, 212, 0.1), 0 4px 6px -2px rgba(6, 182, 212, 0.05)" }}
           onClick={() => onNavigate?.('students')}
-          className="bg-white p-5 rounded-xl shadow-sm border border-slate-100 cursor-pointer hover:shadow-md transition-all flex items-center justify-between"
+          className="bg-white p-5 rounded-2xl border border-slate-100 hover:border-cyan-200 cursor-pointer transition-all flex items-center justify-between shadow-xs relative overflow-hidden"
         >
-          <div className="space-y-1">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-cyan-500/5 rounded-full blur-2xl pointer-events-none"></div>
+          <div className="space-y-1 relative z-10">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block font-mono">Tablas de Escuela</span>
-            <span className="text-2xl font-extrabold text-cyan-600 mt-1 block font-display">
+            <span className="text-2xl font-black text-slate-900 mt-1 block font-display">
               {studentsNeedingBoards} / {totalStudentsCount}
             </span>
-            <span className="text-[11px] text-slate-400 inline-flex items-center gap-1">Precisan tablas <ChevronRight className="w-3 h-3" /></span>
+            <span className="text-[11px] text-cyan-600 hover:text-cyan-700 font-semibold inline-flex items-center gap-0.5">Precisan tablas <ChevronRight className="w-3 h-3" /></span>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-cyan-50/80 text-cyan-600 flex items-center justify-center shadow-sm border border-cyan-100">
+          <div className="w-12 h-12 rounded-xl bg-cyan-50 text-cyan-600 flex items-center justify-center border border-cyan-100 relative z-10 shadow-xs">
             <Waves className="w-5 h-5" />
           </div>
         </motion.div>
 
         {/* Instructors Staff Count */}
         <motion.div 
-          whileHover={{ y: -3, scale: 1.01 }}
+          whileHover={{ y: -4, shadow: "0 10px 15px -3px rgba(139, 92, 246, 0.1), 0 4px 6px -2px rgba(139, 92, 246, 0.05)" }}
           onClick={() => onNavigate?.('instructors')}
-          className="bg-white p-5 rounded-xl shadow-sm border border-slate-100 cursor-pointer hover:shadow-md transition-all flex items-center justify-between"
+          className="bg-white p-5 rounded-2xl border border-slate-100 hover:border-violet-200 cursor-pointer transition-all flex items-center justify-between shadow-xs relative overflow-hidden"
         >
-          <div className="space-y-1">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-violet-500/5 rounded-full blur-2xl pointer-events-none"></div>
+          <div className="space-y-1 relative z-10">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block font-mono">Staff Coaches</span>
-            <span className="text-2xl font-extrabold text-violet-600 mt-1 block font-display">{instructorsCount} Coaches</span>
-            <span className="text-[11px] text-slate-400 inline-flex items-center gap-1">Coordinar staff <ChevronRight className="w-3 h-3" /></span>
+            <span className="text-2xl font-black text-slate-900 mt-1 block font-display">{instructorsCount} Coaches</span>
+            <span className="text-[11px] text-violet-600 hover:text-violet-700 font-semibold inline-flex items-center gap-0.5">Coordinar staff <ChevronRight className="w-3 h-3" /></span>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-violet-50/80 text-violet-600 flex items-center justify-center shadow-sm border border-violet-100">
+          <div className="w-12 h-12 rounded-xl bg-violet-50 text-violet-600 flex items-center justify-center border border-violet-100 relative z-10 shadow-xs">
             <UserCheck className="w-5 h-5" />
           </div>
         </motion.div>
