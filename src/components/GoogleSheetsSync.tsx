@@ -25,6 +25,7 @@ export default function GoogleSheetsSync() {
   const [token, setToken] = useState<string | null>(null);
   const [needsAuth, setNeedsAuth] = useState(true);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
   const [spreadsheetId, setSpreadsheetId] = useState(() => {
     return localStorage.getItem('spreadsheet_id') || DEFAULT_SPREADSHEET_ID;
   });
@@ -42,6 +43,7 @@ export default function GoogleSheetsSync() {
         setUser(currentUser);
         setToken(currentToken);
         setNeedsAuth(false);
+        setLoginError(null);
         addLog('Autenticación de Google exitosa.');
       },
       () => {
@@ -59,6 +61,7 @@ export default function GoogleSheetsSync() {
 
   const handleLogin = async () => {
     setIsLoggingIn(true);
+    setLoginError(null);
     try {
       const result = await googleSignIn();
       if (result) {
@@ -67,9 +70,16 @@ export default function GoogleSheetsSync() {
         setNeedsAuth(false);
         addLog('Conectado a Google con éxito.');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Login failed:', err);
-      addLog('Error al iniciar sesión con Google.');
+      let errorMsg = 'Error al iniciar sesión con Google.';
+      if (err?.code === 'auth/unauthorized-domain' || err?.message?.includes('unauthorized-domain')) {
+        errorMsg = 'auth/unauthorized-domain';
+        addLog('❌ Error: auth/unauthorized-domain (Dominio no autorizado en la consola de Firebase).');
+      } else {
+        addLog(`❌ Error al iniciar sesión: ${err?.message || err}`);
+      }
+      setLoginError(errorMsg);
     } finally {
       setIsLoggingIn(false);
     }
@@ -234,31 +244,64 @@ export default function GoogleSheetsSync() {
     }
 
     setIsSyncing(true);
-    addLog('Iniciando importación desde pestaña "Alumnos" de Google Sheets...');
+    addLog('Iniciando importación desde Google Sheets...');
 
     try {
-      const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Alumnos!A1:Z1000`;
+      // 1. Fetch metadata first to dynamically list sheets and find a valid tab
+      addLog('Leyendo estructura de la hoja de cálculo...');
+      const metaRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}?fields=sheets.properties.title`, {
+        headers: { Authorization: `Bearer ${activeToken}` }
+      });
+      
+      if (!metaRes.ok) {
+        const errorDetail = await metaRes.text();
+        throw new Error(`No se pudo leer la hoja de cálculo. Por favor, verifica que el enlace o ID sea correcto y que tu cuenta tenga acceso. Detalles: ${errorDetail}`);
+      }
+
+      const metaData = await metaRes.json();
+      const sheetTitles: string[] = (metaData.sheets || []).map((s: any) => s.properties.title);
+      addLog(`Pestañas encontradas en el documento: ${sheetTitles.join(', ')}`);
+
+      if (sheetTitles.length === 0) {
+        throw new Error('La hoja de cálculo no contiene ninguna pestaña.');
+      }
+
+      // Check if "Alumnos" is present, otherwise fallback to the first tab
+      let targetTab = 'Alumnos';
+      if (!sheetTitles.includes('Alumnos')) {
+        targetTab = sheetTitles[0];
+        addLog(`⚠️ Pestaña "Alumnos" no encontrada de forma exacta.`);
+        addLog(`Intentando importar desde la primera pestaña disponible: "${targetTab}"`);
+      } else {
+        addLog(`Pestaña "Alumnos" encontrada con éxito. Cargando datos...`);
+      }
+
+      const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(targetTab)}!A1:Z1000`;
       const res = await fetch(url, { headers: { Authorization: `Bearer ${activeToken}` } });
       
       if (!res.ok) {
-        throw new Error('No se pudo acceder a la pestaña "Alumnos" del Sheets.');
+        throw new Error(`No se pudo acceder a la pestaña "${targetTab}".`);
       }
 
       const data = await res.json();
       const rows = data.values || [];
 
       if (rows.length < 2) {
-        addLog('No se encontraron registros de alumnos para importar.');
+        addLog(`No se encontraron suficientes registros de datos en la pestaña "${targetTab}" (Se necesita una fila de cabecera y al menos un alumno).`);
         setIsSyncing(false);
         return;
       }
 
       const headers = rows[0].map((h: string) => h.trim().toLowerCase());
       const idIdx = headers.indexOf('id');
-      const nameIdx = headers.indexOf('nombre');
-      const emailIdx = headers.indexOf('email');
-      const phoneIdx = headers.indexOf('telefono');
-      const levelIdx = headers.indexOf('nivel');
+      
+      // Smart fuzzy matching for columns
+      const nameIdx = headers.findIndex((h: string) => h.includes('nombre') || h.includes('name') || h === 'alumno' || h === 'estudiante');
+      const emailIdx = headers.findIndex((h: string) => h.includes('email') || h.includes('correo') || h.includes('mail') || h.includes('e-mail'));
+      const phoneIdx = headers.findIndex((h: string) => h.includes('telefono') || h.includes('teléfono') || h.includes('celular') || h.includes('phone') || h.includes('telf') || h.includes('contacto'));
+
+      const finalNameIdx = nameIdx !== -1 ? nameIdx : (rows[0].length > 1 ? 1 : 0);
+      addLog(`Mapeo de columnas: Nombre en col ${finalNameIdx + 1}, Email en col ${emailIdx !== -1 ? emailIdx + 1 : 'no detectado'}, Teléfono en col ${phoneIdx !== -1 ? phoneIdx + 1 : 'no detectado'}`);
 
       const existingStudents = await getStudents();
       const existingIds = new Set(existingStudents.map(s => s.id));
@@ -268,19 +311,19 @@ export default function GoogleSheetsSync() {
       let importCount = 0;
       for (let i = 1; i < rows.length; i++) {
         const row = rows[i];
-        const rawId = row[idIdx];
-        const name = row[nameIdx];
+        const rawId = idIdx !== -1 ? row[idIdx] : undefined;
+        const name = row[finalNameIdx];
         
-        if (!name) continue;
+        if (!name || name.trim() === '') continue;
 
         const id = rawId || `sheet-import-${Date.now()}-${i}`;
 
         if (!existingIds.has(id)) {
-          addLog(`Registrando Alumno: ${name}...`);
+          addLog(`Registrando Alumno: ${name.trim()}...`);
           const newStudentRef = await addStudent({
-            name,
-            email: row[emailIdx] || '',
-            phone: row[phoneIdx] || '',
+            name: name.trim(),
+            email: emailIdx !== -1 ? row[emailIdx] || '' : '',
+            phone: phoneIdx !== -1 ? row[phoneIdx] || '' : '',
             enrollmentDate: new Date().toISOString()
           });
 
@@ -293,7 +336,7 @@ export default function GoogleSheetsSync() {
               classesUsed: 0,
               totalClasses: firstPkg.totalClasses,
               totalPrice: firstPkg.price,
-              amountPaid: firstPkg.price, // Consider fully paid or customize
+              amountPaid: firstPkg.price,
               status: 'active'
             });
           }
@@ -335,7 +378,10 @@ export default function GoogleSheetsSync() {
       const studentsRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Alumnos!A1:F2000`, {
         headers: { Authorization: `Bearer ${activeToken}` }
       });
-      const studentsData = studentsRes.ok ? await studentsRes.json() : null;
+      if (!studentsRes.ok) {
+        throw new Error('No se pudo acceder a la pestaña "Alumnos". Si estás usando una hoja de cálculo nueva o vacía, por favor haz clic en "Exportar a Sheets" primero para inicializar la estructura y crear todas las pestañas automáticamente.');
+      }
+      const studentsData = await studentsRes.json();
       const studentsRows = studentsData?.values || [];
       
       const parsedStudents = [];
@@ -552,7 +598,7 @@ export default function GoogleSheetsSync() {
               <p className="text-xs font-semibold text-emerald-950">{user?.email}</p>
             </div>
             <button
-              onClick={handleLogout}
+               onClick={handleLogout}
               className="p-1 px-2.5 bg-white border border-rose-200 text-rose-600 rounded-lg text-[10px] font-bold hover:bg-rose-50 cursor-pointer transition-colors"
             >
               Cerrar
@@ -560,6 +606,43 @@ export default function GoogleSheetsSync() {
           </div>
         )}
       </div>
+
+      {/* Firebase Domain Authorization Instructions */}
+      {loginError === 'auth/unauthorized-domain' && (
+        <motion.div 
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="p-5 bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 rounded-2xl text-xs text-amber-900 space-y-3 shadow-xs"
+        >
+          <div className="flex items-center gap-2 font-extrabold text-amber-950 text-sm">
+            <AlertCircle className="w-5 h-5 text-amber-600 shrink-0" />
+            Dominio de Vista Previa No Autorizado en Firebase (auth/unauthorized-domain)
+          </div>
+          <div className="space-y-2 leading-relaxed">
+            <p>
+              Debido a las políticas de seguridad de Firebase Authentication, el dominio temporal de este contenedor de desarrollo debe agregarse manualmente a la lista de <strong>Dominios Autorizados</strong> de tu proyecto Firebase. De lo contrario, Google bloqueará el inicio de sesión emergente.
+            </p>
+            <p className="font-bold text-amber-950">
+              Por favor, agrega los siguientes dominios a tu proyecto en la Consola de Firebase:
+            </p>
+            <div className="bg-white/80 p-3 rounded-xl border border-amber-200 font-mono text-[11px] text-slate-800 space-y-1 select-all shadow-inner">
+              <div>{window.location.hostname}</div>
+              <div>ais-dev-x7rub6qrgttl73kmnhy2wz-292657699751.us-west2.run.app</div>
+              <div>ais-pre-x7rub6qrgttl73kmnhy2wz-292657699751.us-west2.run.app</div>
+            </div>
+            <div className="space-y-1.5 pt-1">
+              <p className="font-bold text-amber-950">Pasos para autorizarlos:</p>
+              <ol className="list-decimal pl-4.5 space-y-1">
+                <li>Ve a tu <a href="https://console.firebase.google.com/" target="_blank" rel="noreferrer" className="underline font-bold text-amber-700 hover:text-amber-800">Consola de Firebase</a> y entra a tu proyecto escolar.</li>
+                <li>En el menú de la izquierda, entra a <strong>Authentication</strong>.</li>
+                <li>Selecciona la pestaña superior <strong>Settings</strong> (Configuración) y baja hasta la sección <strong>Authorized domains</strong> (Dominios autorizados).</li>
+                <li>Haz clic en <strong>Add domain</strong> (Agregar dominio) y copia cada una de las direcciones de arriba.</li>
+                <li>¡Listo! Regresa a esta pestaña y haz clic de nuevo en <strong>Vincular Cuenta Google</strong>.</li>
+              </ol>
+            </div>
+          </div>
+        </motion.div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Sync Settings */}
