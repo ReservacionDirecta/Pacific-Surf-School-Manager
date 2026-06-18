@@ -1,21 +1,23 @@
 import express from 'express';
 import { createServer as createViteServer } from 'vite';
 import path from 'path';
-import { fileURLToPath } from 'url';
+import fs from 'fs';
 import Database from 'better-sqlite3';
 import bcrypt from 'bcryptjs';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
 async function startServer() {
   const app = express();
-  const PORT = process.env.PORT || 3000;
+  const PORT = Number(process.env.PORT) || 3000;
 
   app.use(express.json());
 
-  // Initialize SQLite
-  const db = new Database('./database.sqlite');
+  // Initialize SQLite safely making sure parent directory exists
+  const dbPath = process.env.DATABASE_PATH || './database.sqlite';
+  const dbDir = path.dirname(dbPath);
+  if (!fs.existsSync(dbDir)) {
+    fs.mkdirSync(dbDir, { recursive: true });
+  }
+  const db = new Database(dbPath);
 
   // Create tables
   db.exec(`
