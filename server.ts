@@ -448,10 +448,18 @@ async function startServer() {
 
   app.post('/api/students', async (req, res) => {
     const s = req.body;
+    if (!s.name || !s.name.trim()) {
+      return res.status(400).json({ error: 'El nombre del alumno es obligatorio' });
+    }
+    const nameTrimmed = s.name.trim();
+    const existing = await db.prepare('SELECT * FROM students WHERE LOWER(TRIM(name)) = LOWER(?)').get(nameTrimmed) as any;
+    if (existing) {
+      return res.json({ id: existing.id, name: existing.name, email: existing.email, phone: existing.phone, age: existing.age, hasBoard: existing.hasBoard, parentsName: existing.parentsName, birthDate: existing.birthDate, enrollmentDate: existing.enrollmentDate, duplicate: true });
+    }
     const id = s.id || Math.random().toString(36).substr(2, 9);
     await db.prepare(
       'INSERT INTO students (id, name, email, phone, age, "hasBoard", "parentsName", "birthDate", "enrollmentDate") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
-    ).run(id, s.name, s.email, s.phone, s.age, s.hasBoard, s.parentsName, s.birthDate, s.enrollmentDate);
+    ).run(id, nameTrimmed, s.email, s.phone, s.age, s.hasBoard, s.parentsName, s.birthDate, s.enrollmentDate);
     res.json({ id, ...s });
   });
 

@@ -316,21 +316,20 @@ export default function GoogleSheetsSync() {
       addLog(`Mapeo de columnas: Nombre en col ${finalNameIdx + 1}, Email en col ${emailIdx !== -1 ? emailIdx + 1 : 'no detectado'}, Teléfono en col ${phoneIdx !== -1 ? phoneIdx + 1 : 'no detectado'}`);
 
       const existingStudents = await getStudents();
-      const existingIds = new Set(existingStudents.map(s => s.id));
+      const existingNames = new Set(existingStudents.map(s => s.name.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')));
       const allPkgs = await getPackages();
       const firstPkg = allPkgs[0];
 
       let importCount = 0;
       for (let i = 1; i < rows.length; i++) {
         const row = rows[i];
-        const rawId = idIdx !== -1 ? row[idIdx] : undefined;
         const name = row[finalNameIdx];
         
         if (!name || name.trim() === '') continue;
 
-        const id = rawId || `sheet-import-${Date.now()}-${i}`;
+        const normalizedName = name.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
-        if (!existingIds.has(id)) {
+        if (!existingNames.has(normalizedName)) {
           addLog(`Registrando Alumno: ${name.trim()}...`);
           const newStudentRef = await addStudent({
             name: name.trim(),
@@ -339,8 +338,8 @@ export default function GoogleSheetsSync() {
             enrollmentDate: new Date().toISOString()
           });
 
-          if (newStudentRef && firstPkg && firstPkg.id) {
-            const createdStudentId = newStudentRef.id || id;
+          if (newStudentRef && !(newStudentRef as any).duplicate && firstPkg && firstPkg.id) {
+            const createdStudentId = newStudentRef.id;
             await addStudentPackage({
               studentId: createdStudentId,
               packageId: firstPkg.id,
@@ -353,6 +352,7 @@ export default function GoogleSheetsSync() {
             });
           }
 
+          existingNames.add(normalizedName);
           importCount++;
         }
       }
