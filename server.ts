@@ -6,6 +6,15 @@ import Database from 'better-sqlite3';
 import bcrypt from 'bcryptjs';
 import pg from 'pg';
 
+// Safeguards process-wide against unhandled rejections & crashes
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('🔥 [Proceso] Rechazo de promesa no manejado en:', promise, 'razón:', reason);
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('🔥 [Proceso] Excepción no atrapada en servidor:', err);
+});
+
 const camelKeys: Record<string, string> = {
   hasboard: 'hasBoard',
   parentsname: 'parentsName',
@@ -48,13 +57,25 @@ class DatabaseService {
           connectionTimeoutMillis: 3500 // 3.5 seconds connection timeout
         });
         
+        // Evitar que errores de conexión inesperados en el pool tiren el servidor Express
+        this.pgPool.on('error', (err) => {
+          console.error('⚠️ [PostgreSQL Pool Error]:', err);
+        });
+        
         // Test connection with a promise race to prevent any stalling
+        const queryPromise = this.pgPool.query('SELECT NOW()');
+        
+        // Evitar que si expira el timeout, el fallo tardío de la consulta de red quede no atrapado y tire Node
+        queryPromise.catch((err) => {
+          console.log('🛰️ [PostgreSQL Lazy Init Check]: Consulta de verificación de canal completada o abortada:', err.message || err);
+        });
+        
         const connectTimeout = new Promise((_, reject) =>
           setTimeout(() => reject(new Error('El intento de conexión a PostgreSQL superó el límite de 3.5 segundos')), 3500)
         );
         
         await Promise.race([
-          this.pgPool.query('SELECT NOW()'),
+          queryPromise,
           connectTimeout
         ]);
 
