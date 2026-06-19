@@ -392,20 +392,29 @@ export const exportToGoogleSheets = async (spreadsheetId: string): Promise<SyncR
 
     // Helper function to write sheet data
     const writeSheetData = async (range: string, values: any[][]) => {
-      // First clear the range so old rows below new data don't persist
-      await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(range)}:clear`, {
+      // Try clearing the range first so old rows below new data don't persist
+      const clearUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(range)}:clear`;
+      const clearRes = await fetch(clearUrl, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` }
-      }).catch(() => {});
-      const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(range)}?valueInputOption=USER_ENTERED`, {
-        method: 'PUT',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ values })
       });
-      if (!res.ok) {
+      const clearOk = clearRes.ok;
+
+      // Build final values: if clear failed, pad with empty rows to overwrite stale data (up to 200 rows)
+      let finalValues = values;
+      if (!clearOk && values.length < 200) {
+        const emptyRow = Array(values[0].length).fill('');
+        const padded = [...values];
+        for (let i = values.length; i < 200; i++) padded.push([...emptyRow]);
+        finalValues = padded;
+      }
+
+      const writeRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(range)}?valueInputOption=USER_ENTERED`, {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ values: finalValues })
+      });
+      if (!writeRes.ok) {
         throw new Error(`Error escribiendo en el rango ${range}`);
       }
     };
