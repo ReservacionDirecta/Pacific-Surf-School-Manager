@@ -1,5 +1,4 @@
 import express from 'express';
-import { createServer as createViteServer } from 'vite';
 import path from 'path';
 import fs from 'fs';
 import { createRequire } from 'module';
@@ -117,8 +116,17 @@ class DatabaseService {
     console.log(`🔌 Inicializando base de datos SQLite en: ${dbPath}`);
     try {
       if (!Database) {
-        const requireModule = createRequire(import.meta.url);
-        Database = requireModule('better-sqlite3');
+        if (typeof require !== 'undefined') {
+          Database = require('better-sqlite3');
+        } else {
+          const metaUrl = typeof import.meta !== 'undefined' && import.meta.url ? import.meta.url : '';
+          if (metaUrl) {
+            const requireModule = createRequire(metaUrl);
+            Database = requireModule('better-sqlite3');
+          } else {
+            throw new Error('Entorno de ejecución no soporta require ni import.meta.url');
+          }
+        }
       }
       this.sqliteDb = new Database(dbPath);
       this.isPostgres = false;
@@ -300,7 +308,35 @@ async function startServer() {
   // Initialize DB instance (PG as primary if available, otherwise SQLite)
   const db = new DatabaseService();
   const dbUrl = process.env.DATABASE_URL || 'postgresql://postgres:pXfkQjTmZvUrInqCBiwTFaPWCoisssQX@thomas.proxy.rlwy.net:38659/railway';
-  await db.init(dbUrl, dbPath);
+  try {
+    await db.init(dbUrl, dbPath);
+  } catch (dbErr: any) {
+    console.error('⚠️ Error crítico al inicializar la base de datos. El servidor iniciará de todos modos en modo degradado para evitar caídas del contenedor:', dbErr.stack || dbErr);
+    db.isPostgres = false;
+    db.sqliteDb = {
+      prepare: (sql: string) => {
+        console.error(`🚨 Consulta SQL en base de datos deshabilitada: ${sql}`);
+        return {
+          run: () => ({ lastInsertRowid: null }),
+          all: () => [],
+          get: () => null
+        };
+      },
+      exec: (sql: string) => {
+        console.error(`🚨 Script SQL en base de datos deshabilitada: ${sql}`);
+      },
+      transaction: (fn: Function) => {
+        return () => {
+          console.error(`🚨 Transacción en base de datos deshabilitada.`);
+          try {
+            fn();
+          } catch (err) {
+            console.error('Error ejecutando callback de transacción ficticia:', err);
+          }
+        };
+      }
+    };
+  }
 
   // If using local SQLite, make sure tables exist
   if (!db.isPostgres) {
@@ -862,6 +898,7 @@ async function startServer() {
 
   // Vite middleware
   if (process.env.NODE_ENV !== 'production') {
+    const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: 'spa',
