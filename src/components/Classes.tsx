@@ -14,7 +14,10 @@ import {
   BookOpen, 
   RefreshCw,
   AlertTriangle,
-  FileSpreadsheet
+  FileSpreadsheet,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-react';
 import { Class, Student, Instructor, StudentPackage } from '../types';
 import { addClass, updateClass, deleteClass, updateStudentPackage, getClasses, getStudents, getInstructors, getStudentPackages } from '../services/db';
@@ -63,6 +66,9 @@ export default function Classes({ onNavigate }: { onNavigate?: (view: string) =>
   const [filterStudent, setFilterStudent] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [viewMode, setViewMode] = useState<'list' | 'agenda'>('list');
+  // Sort state
+  const [sortKey, setSortKey] = useState('date');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
 
   const fetchData = async () => {
     try {
@@ -251,13 +257,45 @@ export default function Classes({ onNavigate }: { onNavigate?: (view: string) =>
     }
   };
 
-  // Filter rows
-  const filteredSystemClasses = classes.filter(cls => {
-    const studentName = students[cls.studentId]?.name || '';
-    const matchesStudent = studentName.toLowerCase().includes(filterStudent.toLowerCase());
-    const matchesStatus = filterStatus === 'all' || cls.status === filterStatus;
-    return matchesStudent && matchesStatus;
-  });
+  // Sort handler
+  const handleSort = (key: string) => {
+    if (sortKey === key) {
+      setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortKey(key);
+      setSortDir('asc');
+    }
+  };
+
+  const SortIcon = ({ col }: { col: string }) => {
+    if (sortKey !== col) return <ArrowUpDown className="w-3 h-3 ml-1 inline-block opacity-30 group-hover:opacity-100" />;
+    return sortDir === 'asc'
+      ? <ArrowUp className="w-3 h-3 ml-1 inline-block text-cyan-600" />
+      : <ArrowDown className="w-3 h-3 ml-1 inline-block text-cyan-600" />;
+  };
+
+  // Filter + Sort rows
+  const filteredSystemClasses = classes
+    .filter(cls => {
+      const studentName = students[cls.studentId]?.name || '';
+      const matchesStudent = studentName.toLowerCase().includes(filterStudent.toLowerCase());
+      const matchesStatus = filterStatus === 'all' || cls.status === filterStatus;
+      return matchesStudent && matchesStatus;
+    })
+    .sort((a, b) => {
+      const dir = sortDir === 'asc' ? 1 : -1;
+      let cmp = 0;
+      if (sortKey === 'date') {
+        cmp = new Date(a.date).getTime() - new Date(b.date).getTime();
+      } else if (sortKey === 'student') {
+        cmp = (students[a.studentId]?.name || '').localeCompare(students[b.studentId]?.name || '');
+      } else if (sortKey === 'instructor') {
+        cmp = (instructors[a.instructorId]?.name || '').localeCompare(instructors[b.instructorId]?.name || '');
+      } else if (sortKey === 'status') {
+        cmp = a.status.localeCompare(b.status);
+      }
+      return cmp * dir;
+    });
 
   const filteredSheetsClasses = sheetsClasses.filter(cls => {
     const studentName = students[cls.studentId]?.name || cls.studentId || '';
@@ -411,13 +449,21 @@ export default function Classes({ onNavigate }: { onNavigate?: (view: string) =>
       {currentTab === 'system' ? (
         viewMode === 'list' ? (
           <div className="bg-white rounded-2xl shadow-sm overflow-hidden border border-slate-150 overflow-x-auto">
-            <table className="min-w-full divide-y divide-slate-150">
+              <table className="min-w-full divide-y divide-slate-150">
               <thead className="bg-slate-50/70">
                 <tr>
-                  <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-widest font-mono">Fecha y Hora</th>
-                  <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-widest font-mono">Alumno / Surfer</th>
-                  <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-widest font-mono">Instructor Autorizado</th>
-                  <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-widest font-mono">Estado</th>
+                  <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-widest font-mono cursor-pointer hover:text-slate-700 select-none group" onClick={() => handleSort('date')}>
+                    Fecha y Hora <SortIcon col="date" />
+                  </th>
+                  <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-widest font-mono cursor-pointer hover:text-slate-700 select-none group" onClick={() => handleSort('student')}>
+                    Alumno / Surfer <SortIcon col="student" />
+                  </th>
+                  <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-widest font-mono cursor-pointer hover:text-slate-700 select-none group" onClick={() => handleSort('instructor')}>
+                    Instructor Autorizado <SortIcon col="instructor" />
+                  </th>
+                  <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-widest font-mono cursor-pointer hover:text-slate-700 select-none group" onClick={() => handleSort('status')}>
+                    Estado <SortIcon col="status" />
+                  </th>
                   <th className="px-6 py-3.5 text-right text-xs font-bold text-slate-400 uppercase tracking-widest font-mono">Control / Eliminar</th>
                 </tr>
               </thead>

@@ -8,7 +8,10 @@ import {
   Phone, 
   Mail, 
   Compass,
-  Briefcase 
+  Briefcase,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-react';
 import { Instructor } from '../types';
 import { addInstructor, getInstructors, updateInstructor, deleteInstructor } from '../services/db';
@@ -17,6 +20,9 @@ export default function Instructors() {
   const [instructors, setInstructors] = useState<Instructor[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingInstructor, setEditingInstructor] = useState<Instructor | null>(null);
+  // Sort state
+  const [sortKey, setSortKey] = useState('name');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
 
   // Form state
   const [name, setName] = useState('');
@@ -83,6 +89,35 @@ export default function Instructors() {
     }
   };
 
+  const handleSort = (key: string) => {
+    if (sortKey === key) {
+      setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortKey(key);
+      setSortDir('asc');
+    }
+  };
+
+  const SortIcon = ({ col }: { col: string }) => {
+    if (sortKey !== col) return <ArrowUpDown className="w-3 h-3 ml-1 inline-block opacity-30" />;
+    return sortDir === 'asc'
+      ? <ArrowUp className="w-3 h-3 ml-1 inline-block text-cyan-600" />
+      : <ArrowDown className="w-3 h-3 ml-1 inline-block text-cyan-600" />;
+  };
+
+  const sortedInstructors = [...instructors].sort((a, b) => {
+    const dir = sortDir === 'asc' ? 1 : -1;
+    let cmp = 0;
+    if (sortKey === 'name') {
+      cmp = a.name.localeCompare(b.name);
+    } else if (sortKey === 'email') {
+      cmp = (a.email || '').localeCompare(b.email || '');
+    } else if (sortKey === 'phone') {
+      cmp = (a.phone || '').localeCompare(b.phone || '');
+    }
+    return cmp * dir;
+  });
+
   return (
     <div className="space-y-6">
       {/* Header Panel */}
@@ -109,14 +144,20 @@ export default function Instructors() {
         <table className="min-w-full divide-y divide-slate-150">
           <thead className="bg-slate-50/70">
             <tr>
-              <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-widest font-mono">Nombre de Instructor</th>
-              <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-widest font-mono">Correo Electrónico</th>
-              <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-widest font-mono">Celular / WhatsApp</th>
+              <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-widest font-mono cursor-pointer hover:text-slate-700 select-none" onClick={() => handleSort('name')}>
+                Nombre de Instructor <SortIcon col="name" />
+              </th>
+              <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-widest font-mono cursor-pointer hover:text-slate-700 select-none" onClick={() => handleSort('email')}>
+                Correo Electrónico <SortIcon col="email" />
+              </th>
+              <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-widest font-mono cursor-pointer hover:text-slate-700 select-none" onClick={() => handleSort('phone')}>
+                Celular / WhatsApp <SortIcon col="phone" />
+              </th>
               <th className="px-6 py-3.5 text-right text-xs font-bold text-slate-400 uppercase tracking-widest font-mono">Acciones</th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-slate-150">
-            {instructors.map(instructor => (
+            {sortedInstructors.map(instructor => (
               <tr key={instructor.id} className="hover:bg-slate-50/55 transition duration-150">
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center gap-3">

@@ -18,7 +18,10 @@ import {
   AlertCircle,
   Clock,
   History,
-  Trash2
+  Trash2,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-react';
 import { StudentPackage, Student, Payment, Package } from '../types';
 import { getStudents, getStudentPackages, updateStudentPackage, addPayment, getPayments, deletePayment, addStudentPackage, getPackages } from '../services/db';
@@ -33,6 +36,9 @@ export default function Payments({ onNavigate }: { onNavigate?: (view: string) =
   
   // Search and filter
   const [filterStudentName, setFilterStudentName] = useState('');
+  // Sort state
+  const [sortKey, setSortKey] = useState('student');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
 
   // Payment register modal states
   const [editingPayment, setEditingPayment] = useState<StudentPackage | null>(null);
@@ -214,13 +220,50 @@ export default function Payments({ onNavigate }: { onNavigate?: (view: string) =
   const today = new Date();
   
   // Filter pending packages by name
-  const filteredPending = studentPackages.filter(sp => {
-    const student = students[sp.studentId];
-    if (!student) return false;
-    const matchesName = student.name.toLowerCase().includes(filterStudentName.toLowerCase());
-    const isPending = sp.amountPaid < sp.totalPrice;
-    return matchesName && isPending;
-  });
+  const filteredPending = studentPackages
+    .filter(sp => {
+      const student = students[sp.studentId];
+      if (!student) return false;
+      const matchesName = student.name.toLowerCase().includes(filterStudentName.toLowerCase());
+      const isPending = sp.amountPaid < sp.totalPrice;
+      return matchesName && isPending;
+    })
+    .sort((a, b) => {
+      const dir = sortDir === 'asc' ? 1 : -1;
+      const aStudent = students[a.studentId]?.name || '';
+      const bStudent = students[b.studentId]?.name || '';
+      let cmp = 0;
+      if (sortKey === 'student') {
+        cmp = aStudent.localeCompare(bStudent);
+      } else if (sortKey === 'package') {
+        cmp = (a.packageName || '').localeCompare(b.packageName || '');
+      } else if (sortKey === 'total') {
+        cmp = a.totalPrice - b.totalPrice;
+      } else if (sortKey === 'paid') {
+        cmp = a.amountPaid - b.amountPaid;
+      } else if (sortKey === 'debt') {
+        cmp = (a.totalPrice - a.amountPaid) - (b.totalPrice - b.amountPaid);
+      } else if (sortKey === 'due') {
+        cmp = (a.paymentDueDate || '').localeCompare(b.paymentDueDate || '');
+      }
+      return cmp * dir;
+    });
+
+  const handleSort = (key: string) => {
+    if (sortKey === key) {
+      setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortKey(key);
+      setSortDir('asc');
+    }
+  };
+
+  const SortIcon = ({ col }: { col: string }) => {
+    if (sortKey !== col) return <ArrowUpDown className="w-3 h-3 ml-1 inline-block opacity-30" />;
+    return sortDir === 'asc'
+      ? <ArrowUp className="w-3 h-3 ml-1 inline-block text-cyan-600" />
+      : <ArrowDown className="w-3 h-3 ml-1 inline-block text-cyan-600" />;
+  };
 
   return (
     <div className="space-y-6">
@@ -327,12 +370,24 @@ export default function Payments({ onNavigate }: { onNavigate?: (view: string) =
         <table className="min-w-full divide-y divide-slate-150">
           <thead className="bg-slate-50/10">
             <tr>
-              <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-widest font-mono">Alumno</th>
-              <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-widest font-mono">Paquete de surf</th>
-              <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-widest font-mono">Precio Total</th>
-              <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-widest font-mono">Abonado</th>
-              <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-widest font-mono">Saldo Deuda</th>
-              <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-widest font-mono">Límite Pago</th>
+              <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-widest font-mono cursor-pointer hover:text-slate-700 select-none" onClick={() => handleSort('student')}>
+                Alumno <SortIcon col="student" />
+              </th>
+              <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-widest font-mono cursor-pointer hover:text-slate-700 select-none" onClick={() => handleSort('package')}>
+                Paquete de surf <SortIcon col="package" />
+              </th>
+              <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-widest font-mono cursor-pointer hover:text-slate-700 select-none" onClick={() => handleSort('total')}>
+                Precio Total <SortIcon col="total" />
+              </th>
+              <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-widest font-mono cursor-pointer hover:text-slate-700 select-none" onClick={() => handleSort('paid')}>
+                Abonado <SortIcon col="paid" />
+              </th>
+              <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-widest font-mono cursor-pointer hover:text-slate-700 select-none" onClick={() => handleSort('debt')}>
+                Saldo Deuda <SortIcon col="debt" />
+              </th>
+              <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-widest font-mono cursor-pointer hover:text-slate-700 select-none" onClick={() => handleSort('due')}>
+                Límite Pago <SortIcon col="due" />
+              </th>
               <th className="px-6 py-3.5 text-right text-xs font-bold text-slate-400 uppercase tracking-widest font-mono">Acciones</th>
             </tr>
           </thead>
