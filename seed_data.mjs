@@ -68,6 +68,15 @@ function buildBirthDate(row) {
   return d;
 }
 
+const INSTRUCTORS = [
+  { id: 'inst_1', name: 'Diego Torres', specialty: 'Surf', phone: '948292837', email: 'diego@pacificsurf.com' },
+  { id: 'inst_2', name: 'Jose Fernandez', specialty: 'Surf', phone: '984719283', email: 'jose@pacificsurf.com' }
+];
+
+function toDateStr(date) {
+  return date.toISOString().slice(0, 10);
+}
+
 async function main() {
   const csvPath = path.join(__dirname, 'Base de dato Pacific  - Sheet1.csv');
   const csvText = fs.readFileSync(csvPath, 'utf8');
@@ -77,6 +86,9 @@ async function main() {
 
   const students = [];
   const studentPackages = [];
+  const classes = [];
+  const payments = [];
+  let classIdx = 0;
 
   for (const row of rows) {
     const name = buildName(row);
@@ -107,8 +119,9 @@ async function main() {
       const matchedPkg = DEFAULT_PACKAGES.find(p => p.id === pkgCode);
       const totalPrice = matchedPkg ? matchedPkg.price : totalClasses * 40;
 
+      const spId = `pkg_${sid}`;
       studentPackages.push({
-        id: `pkg_${sid}`,
+        id: spId,
         studentId: sid,
         packageId: pkgCode,
         packageName: pkgName,
@@ -119,22 +132,46 @@ async function main() {
         paymentDueDate: '',
         status: 'active'
       });
+
+      const enrollDate = buildEnrollmentDate(row);
+      const baseDate = enrollDate ? new Date(enrollDate) : new Date('2026-06-01');
+
+      for (let c = 0; c < Math.min(totalClasses, 3); c++) {
+        const classDate = new Date(baseDate);
+        classDate.setDate(classDate.getDate() + c * 7);
+        const instIdx = classIdx % INSTRUCTORS.length;
+        const isPast = classDate < new Date();
+        classes.push({
+          id: `cls_${sid}_${c}`,
+          date: classDate.toISOString(),
+          studentId: sid,
+          instructorId: INSTRUCTORS[instIdx].id,
+          status: isPast ? 'completed' : 'scheduled'
+        });
+        classIdx++;
+      }
+
+      payments.push({
+        id: `pay_${sid}`,
+        studentPackageId: spId,
+        amount: totalPrice,
+        date: enrollDate ? new Date(enrollDate).toISOString() : new Date().toISOString(),
+        method: 'Efectivo',
+        notes: 'Pago completo al matricular'
+      });
     }
   }
 
   const payload = {
     students,
-    instructors: [
-      { id: 'inst_1', name: 'Diego Torres', specialty: 'Surf', phone: '948292837', email: 'diego@pacificsurf.com' },
-      { id: 'inst_2', name: 'Jose Fernandez', specialty: 'Surf', phone: '984719283', email: 'jose@pacificsurf.com' }
-    ],
+    instructors: INSTRUCTORS,
     packages: DEFAULT_PACKAGES,
     studentPackages,
-    classes: [],
-    payments: []
+    classes,
+    payments
   };
 
-  console.log(`📦 Payload: ${students.length} alumnos, ${studentPackages.length} paquetes de alumnos`);
+  console.log(`📦 Payload: ${students.length} alumnos, ${studentPackages.length} paquetes, ${classes.length} clases, ${payments.length} pagos`);
   console.log(`🔗 Enviando a ${API_URL}...`);
 
   const res = await fetch(API_URL, {
