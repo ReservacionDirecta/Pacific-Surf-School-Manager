@@ -11,8 +11,26 @@ async function startServer() {
 
   app.use(express.json());
 
-  // Initialize SQLite safely making sure parent directory exists
-  const dbPath = process.env.DATABASE_PATH || './database.sqlite';
+  // Get database path with auto-detection for mounted persistent volume directories (e.g., /data)
+  let dbPath = process.env.DATABASE_PATH;
+  if (!dbPath) {
+    const commonVolumeDirs = ['/data', '/app/data', '/mnt/volume'];
+    for (const dir of commonVolumeDirs) {
+      if (fs.existsSync(dir)) {
+        try {
+          fs.accessSync(dir, fs.constants.W_OK);
+          dbPath = path.join(dir, 'database.sqlite');
+          console.log(`[Auto-detect] Found active writeable volume at: ${dbPath}`);
+          break;
+        } catch (e) {
+          // not writeable
+        }
+      }
+    }
+    if (!dbPath) {
+      dbPath = './database.sqlite';
+    }
+  }
   const dbDir = path.dirname(dbPath);
   if (!fs.existsSync(dbDir)) {
     fs.mkdirSync(dbDir, { recursive: true });

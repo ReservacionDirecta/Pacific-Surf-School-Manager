@@ -30,7 +30,6 @@ export const isLocalStorageMode = (): boolean => {
   const h = window.location.hostname;
   return (
     h.includes('github.io') ||
-    h.includes('localhost') === false && h.includes('127.0.0.1') === false && !h.match(/^\d+\.\d+\.\d+\.\d+$/) && !h.endsWith('.run.app') ||
     localStorage.getItem('force_offline_ls') === 'true'
   );
 };
