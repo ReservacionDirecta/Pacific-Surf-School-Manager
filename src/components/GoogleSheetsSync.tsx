@@ -144,6 +144,11 @@ export default function GoogleSheetsSync() {
 
   // Write sheet values
   const writeSheetData = async (accessToken: string, targetId: string, range: string, values: any[][]) => {
+    // First clear the range so old rows below new data don't persist
+    await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${targetId}/values/${range}:clear`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${accessToken}` }
+    }).catch(() => {});
     const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${targetId}/values/${range}?valueInputOption=USER_ENTERED`, {
       method: 'PUT',
       headers: {

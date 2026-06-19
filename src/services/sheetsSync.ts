@@ -392,6 +392,11 @@ export const exportToGoogleSheets = async (spreadsheetId: string): Promise<SyncR
 
     // Helper function to write sheet data
     const writeSheetData = async (range: string, values: any[][]) => {
+      // First clear the range so old rows below new data don't persist
+      await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(range)}:clear`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` }
+      }).catch(() => {});
       const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(range)}?valueInputOption=USER_ENTERED`, {
         method: 'PUT',
         headers: {
