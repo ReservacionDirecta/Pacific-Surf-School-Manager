@@ -610,6 +610,16 @@ async function startServer() {
     res.json({ id, ...p });
   });
 
+  app.put('/api/payments/:id', async (req, res) => {
+    const { id } = req.params;
+    const p = req.body;
+    const keys = Object.keys(p);
+    const values = Object.values(p);
+    const setClause = keys.map(k => `${quoteKeyIfNeeded(k)} = ?`).join(', ');
+    await db.prepare(`UPDATE payments SET ${setClause} WHERE id = ?`).run([...values, id]);
+    res.json({ id, ...p });
+  });
+
   app.delete('/api/payments/:id', async (req, res) => {
     await db.prepare('DELETE FROM payments WHERE id = ?').run(req.params.id);
     res.json({ success: true });

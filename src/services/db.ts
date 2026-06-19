@@ -443,3 +443,24 @@ export const deletePayment = async (id: string): Promise<void> => {
   }
   triggerPostMutation();
 };
+
+export const updatePayment = async (id: string, data: Partial<Payment>): Promise<Payment> => {
+  let result: Payment;
+  if (isLocalStorageMode()) {
+    const payments = getLS<Payment>(LS_KEYS.payments);
+    const idx = payments.findIndex(p => p.id === id);
+    if (idx === -1) throw new Error('Pago no encontrado');
+    payments[idx] = { ...payments[idx], ...data };
+    setLS(LS_KEYS.payments, payments);
+    result = payments[idx];
+  } else {
+    const res = await fetch(`/api/payments/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    result = await res.json();
+  }
+  triggerPostMutation();
+  return result;
+};

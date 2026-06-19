@@ -20,7 +20,8 @@ import {
   Activity, 
   MessageSquare,
   Sparkles,
-  Award
+  Award,
+  Pencil
 } from 'lucide-react';
 import { Student, Package, StudentPackage, Class, Instructor, Payment } from '../types';
 
@@ -37,6 +38,7 @@ import {
   addStudentPackage as dbAddStudentPackage,
   updateClass as dbUpdateClass,
   updateStudentPackage as dbUpdateStudentPackage,
+  updatePayment as dbUpdatePayment,
   deleteClass as dbDeleteClass,
   deletePayment as dbDeletePayment
 } from '../services/db';
@@ -77,6 +79,25 @@ export default function StudentDossierModal({ student, isOpen, onClose, onDataCh
   const [newPkgDueDate, setNewPkgDueDate] = useState('');
   const [newPkgNotes, setNewPkgNotes] = useState('');
   const [pkgFormError, setPkgFormError] = useState('');
+
+  // Edit states for class, package, payment
+  const [editClassId, setEditClassId] = useState<string | null>(null);
+  const [editClassDate, setEditClassDate] = useState('');
+  const [editClassInstructorId, setEditClassInstructorId] = useState('');
+
+  const [editPkgId, setEditPkgId] = useState<string | null>(null);
+  const [editPkgTotalPrice, setEditPkgTotalPrice] = useState('');
+  const [editPkgAmountPaid, setEditPkgAmountPaid] = useState('');
+  const [editPkgClassesUsed, setEditPkgClassesUsed] = useState('');
+  const [editPkgTotalClasses, setEditPkgTotalClasses] = useState('');
+  const [editPkgError, setEditPkgError] = useState('');
+
+  const [editPaymentId, setEditPaymentId] = useState<string | null>(null);
+  const [editPayAmount, setEditPayAmount] = useState('');
+  const [editPayMethod, setEditPayMethod] = useState<'Efectivo' | 'Transferencia' | 'Yape' | 'Plin'>('Efectivo');
+  const [editPayDate, setEditPayDate] = useState('');
+  const [editPayNotes, setEditPayNotes] = useState('');
+  const [editPayError, setEditPayError] = useState('');
 
   const loadDossierData = async () => {
     if (!student.id) return;
@@ -313,6 +334,102 @@ export default function StudentDossierModal({ student, isOpen, onClose, onDataCh
       if (onDataChanged) onDataChanged();
     } catch (err: any) {
       setPkgFormError(err.message || 'Error al vender paquete');
+    }
+  };
+
+  // Edit handlers
+  const handleEditClass = (cls: Class) => {
+    setEditClassId(cls.id!);
+    setEditClassDate(format(parseISO(cls.date), "yyyy-MM-dd'T'HH:mm"));
+    setEditClassInstructorId(cls.instructorId);
+  };
+
+  const handleSaveClass = async () => {
+    if (!editClassId) return;
+    try {
+      await dbUpdateClass(editClassId, {
+        date: new Date(editClassDate).toISOString(),
+        instructorId: editClassInstructorId
+      });
+      setEditClassId(null);
+      await loadDossierData();
+      if (onDataChanged) onDataChanged();
+    } catch (err) {
+      console.error(err);
+      alert('Error al guardar clase');
+    }
+  };
+
+  const handleEditPackage = (sp: StudentPackage) => {
+    setEditPkgId(sp.id!);
+    setEditPkgTotalPrice(String(sp.totalPrice));
+    setEditPkgAmountPaid(String(sp.amountPaid));
+    setEditPkgClassesUsed(String(sp.classesUsed));
+    setEditPkgTotalClasses(String(sp.totalClasses));
+    setEditPkgError('');
+  };
+
+  const handleSavePackage = async () => {
+    if (!editPkgId) return;
+    const totalPrice = Number(editPkgTotalPrice);
+    const amountPaid = Number(editPkgAmountPaid);
+    const classesUsed = Number(editPkgClassesUsed);
+    const totalClasses = Number(editPkgTotalClasses);
+    if (!totalPrice || !totalClasses) {
+      setEditPkgError('Precio total y total de clases son obligatorios');
+      return;
+    }
+    try {
+      const updateData: Partial<StudentPackage> = {
+        totalPrice,
+        amountPaid,
+        classesUsed,
+        totalClasses
+      };
+      if (classesUsed >= totalClasses) {
+        updateData.status = 'exhausted';
+      } else if (amountPaid >= totalPrice) {
+        updateData.status = 'active';
+      }
+      await dbUpdateStudentPackage(editPkgId, updateData);
+      setEditPkgId(null);
+      await loadDossierData();
+      if (onDataChanged) onDataChanged();
+    } catch (err) {
+      console.error(err);
+      setEditPkgError('Error al guardar cambios');
+    }
+  };
+
+  const handleEditPayment = (p: Payment) => {
+    setEditPaymentId(p.id!);
+    setEditPayAmount(String(p.amount));
+    setEditPayMethod(p.method);
+    setEditPayDate(format(parseISO(p.date), "yyyy-MM-dd'T'HH:mm"));
+    setEditPayNotes(p.notes || '');
+    setEditPayError('');
+  };
+
+  const handleSavePayment = async () => {
+    if (!editPaymentId) return;
+    const amount = Number(editPayAmount);
+    if (!amount || amount <= 0) {
+      setEditPayError('Monto inválido');
+      return;
+    }
+    try {
+      await dbUpdatePayment(editPaymentId, {
+        amount,
+        method: editPayMethod,
+        date: new Date(editPayDate).toISOString(),
+        notes: editPayNotes
+      });
+      setEditPaymentId(null);
+      await loadDossierData();
+      if (onDataChanged) onDataChanged();
+    } catch (err) {
+      console.error(err);
+      setEditPayError('Error al guardar pago');
     }
   };
 
@@ -725,15 +842,83 @@ export default function StudentDossierModal({ student, isOpen, onClose, onDataCh
                               </span>
                             )}
 
-                            {hasRep && scoringPaymentSpId !== sp.id && (
-                              <button 
-                                onClick={() => setScoringPaymentSpId(sp.id!)}
-                                className="bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 font-bold px-3 py-1.5 rounded-xl transition"
-                              >
-                                💵 Abonar Dinero
-                              </button>
-                            )}
+                            <div className="flex items-center gap-2">
+                              {editPkgId !== sp.id && (
+                                <button 
+                                  onClick={() => handleEditPackage(sp)}
+                                  className="text-blue-400 hover:text-blue-600 p-1.5 rounded-lg hover:bg-blue-50 transition"
+                                  title="Ajustar precio y clases"
+                                >
+                                  <Pencil className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                              {hasRep && scoringPaymentSpId !== sp.id && (
+                                <button 
+                                  onClick={() => setScoringPaymentSpId(sp.id!)}
+                                  className="bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 font-bold px-3 py-1.5 rounded-xl transition"
+                                >
+                                  💵 Abonar Dinero
+                                </button>
+                              )}
+                            </div>
                           </div>
+
+                          {/* Inline edit form for package price/classes */}
+                          {editPkgId === sp.id && (
+                            <motion.div
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: 'auto' }}
+                              className="mt-3 bg-amber-50/50 border border-amber-200 p-4 rounded-xl space-y-3 text-xs"
+                            >
+                              <div className="flex justify-between items-center border-b border-amber-200/50 pb-1.5">
+                                <span className="font-bold uppercase tracking-wider text-[10px] text-amber-800">Ajustar Precio y Clases</span>
+                                <button onClick={() => setEditPkgId(null)} className="text-slate-400 font-bold hover:text-slate-700">Cerrar</button>
+                              </div>
+                              <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                  <label className="block text-slate-500 font-semibold mb-1">Precio Total (S/.)</label>
+                                  <input
+                                    type="text"
+                                    value={editPkgTotalPrice}
+                                    onChange={e => /^\d*\.?\d*$/.test(e.target.value) && setEditPkgTotalPrice(e.target.value)}
+                                    className="bg-white border border-slate-200 rounded-lg w-full p-2 font-bold"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-slate-500 font-semibold mb-1">Monto Pagado (S/.)</label>
+                                  <input
+                                    type="text"
+                                    value={editPkgAmountPaid}
+                                    onChange={e => /^\d*\.?\d*$/.test(e.target.value) && setEditPkgAmountPaid(e.target.value)}
+                                    className="bg-white border border-slate-200 rounded-lg w-full p-2 font-bold"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-slate-500 font-semibold mb-1">Clases Usadas</label>
+                                  <input
+                                    type="text"
+                                    value={editPkgClassesUsed}
+                                    onChange={e => /^\d*$/.test(e.target.value) && setEditPkgClassesUsed(e.target.value)}
+                                    className="bg-white border border-slate-200 rounded-lg w-full p-2 font-bold"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-slate-500 font-semibold mb-1">Total Clases</label>
+                                  <input
+                                    type="text"
+                                    value={editPkgTotalClasses}
+                                    onChange={e => /^\d*$/.test(e.target.value) && setEditPkgTotalClasses(e.target.value)}
+                                    className="bg-white border border-slate-200 rounded-lg w-full p-2 font-bold"
+                                  />
+                                </div>
+                              </div>
+                              {editPkgError && <p className="text-red-500 font-bold text-[10px]">{editPkgError}</p>}
+                              <div className="flex justify-end gap-2 pt-2 border-t border-amber-200/50">
+                                <button onClick={() => setEditPkgId(null)} className="px-3 py-1.5 border border-slate-200 rounded-xl font-semibold hover:bg-slate-50 transition cursor-pointer">Cancelar</button>
+                                <button onClick={handleSavePackage} className="px-4 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold rounded-xl shadow-sm transition cursor-pointer">Guardar Cambios</button>
+                              </div>
+                            </motion.div>
+                          )}
 
                           {/* Expandable Abono form inside this package card */}
                           {scoringPaymentSpId === sp.id && (
@@ -885,12 +1070,60 @@ export default function StudentDossierModal({ student, isOpen, onClose, onDataCh
                           <th className="px-5 py-2.5 text-left">Horario / Fecha</th>
                           <th className="px-5 py-2.5 text-left">Instructor</th>
                           <th className="px-5 py-2.5 text-left">Asistencia</th>
+                          <th className="px-5 py-2.5 text-center">Editar</th>
                           <th className="px-5 py-2.5 text-right">Anular</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-150 text-slate-705">
                         {classes.map(cls => {
                           const coachName = instructors.find(i => i.id === cls.instructorId)?.name || 'Sin asignar';
+                          const isEditing = editClassId === cls.id;
+                          
+                          if (isEditing) {
+                            return (
+                              <tr key={cls.id} className="bg-cyan-50/30">
+                                <td className="px-5 py-3 whitespace-nowrap">
+                                  <input
+                                    type="datetime-local"
+                                    value={editClassDate}
+                                    onChange={e => setEditClassDate(e.target.value)}
+                                    className="border border-slate-200 rounded-lg p-1.5 text-xs w-full"
+                                  />
+                                </td>
+                                <td className="px-5 py-3 whitespace-nowrap">
+                                  <select
+                                    value={editClassInstructorId}
+                                    onChange={e => setEditClassInstructorId(e.target.value)}
+                                    className="border border-slate-200 rounded-lg p-1.5 text-xs w-full"
+                                  >
+                                    <option value="">-- Elige Coach --</option>
+                                    {instructors.map(i => (
+                                      <option key={i.id} value={i.id}>{i.name}</option>
+                                    ))}
+                                  </select>
+                                </td>
+                                <td className="px-5 py-3 whitespace-nowrap text-slate-400 text-[10px]">
+                                  {cls.status === 'scheduled' ? 'Agendada' : cls.status === 'completed' ? 'Completada' : 'Cancelada'}
+                                </td>
+                                <td className="px-5 py-3 whitespace-nowrap text-center">
+                                  <button
+                                    onClick={handleSaveClass}
+                                    className="text-emerald-600 hover:text-emerald-800 font-bold text-[10px] px-2 py-1 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition"
+                                  >
+                                    Guardar
+                                  </button>
+                                </td>
+                                <td className="px-5 py-3 whitespace-nowrap text-right">
+                                  <button
+                                    onClick={() => setEditClassId(null)}
+                                    className="text-slate-400 hover:text-slate-600 p-1 rounded-md"
+                                  >
+                                    <X className="w-3.5 h-3.5" />
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          }
                           
                           return (
                             <tr key={cls.id} className="hover:bg-slate-50/50">
@@ -911,6 +1144,15 @@ export default function StudentDossierModal({ student, isOpen, onClose, onDataCh
                                   <option value="cancelled">Cancelada</option>
                                 </select>
                               </td>
+                              <td className="px-5 py-3 whitespace-nowrap text-center">
+                                <button 
+                                  onClick={() => handleEditClass(cls)}
+                                  className="text-blue-400 hover:text-blue-600 p-1 rounded-md"
+                                  title="Editar fecha y instructor"
+                                >
+                                  <Pencil className="w-3.5 h-3.5" />
+                                </button>
+                              </td>
                               <td className="px-5 py-3 whitespace-nowrap text-right">
                                 <button 
                                   onClick={() => handleDeleteClassRecord(cls)}
@@ -924,7 +1166,7 @@ export default function StudentDossierModal({ student, isOpen, onClose, onDataCh
                         })}
                         {classes.length === 0 && (
                           <tr>
-                            <td colSpan={4} className="px-5 py-8 text-center text-slate-400 italic">No hay registros de lecciones pasadas ni programadas.</td>
+                            <td colSpan={5} className="px-5 py-8 text-center text-slate-400 italic">No hay registros de lecciones pasadas ni programadas.</td>
                           </tr>
                         )}
                       </tbody>
@@ -954,6 +1196,7 @@ export default function StudentDossierModal({ student, isOpen, onClose, onDataCh
                           <th className="px-5 py-2.5 text-left">Concepto / Plan</th>
                           <th className="px-5 py-2.5 text-left">Método</th>
                           <th className="px-5 py-2.5 text-left">Monto Recibido</th>
+                          <th className="px-5 py-2.5 text-center">Editar</th>
                           <th className="px-5 py-2.5 text-right">Anular</th>
                         </tr>
                       </thead>
@@ -963,6 +1206,68 @@ export default function StudentDossierModal({ student, isOpen, onClose, onDataCh
                           .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
                           .map(p => {
                             const refSpName = studentPackages.find(sp => sp.id === p.studentPackageId)?.packageName || 'Surf Plan';
+                            const isEditing = editPaymentId === p.id;
+                            
+                            if (isEditing) {
+                              return (
+                                <tr key={p.id} className="bg-amber-50/40">
+                                  <td className="px-5 py-3 whitespace-nowrap">
+                                    <input
+                                      type="datetime-local"
+                                      value={editPayDate}
+                                      onChange={e => setEditPayDate(e.target.value)}
+                                      className="border border-slate-200 rounded-lg p-1 text-[10px] w-full"
+                                    />
+                                  </td>
+                                  <td className="px-5 py-3">
+                                    <input
+                                      type="text"
+                                      value={editPayNotes}
+                                      onChange={e => setEditPayNotes(e.target.value)}
+                                      placeholder="Notas u operación"
+                                      className="border border-slate-200 rounded-lg p-1 text-[10px] w-full"
+                                    />
+                                  </td>
+                                  <td className="px-5 py-3 whitespace-nowrap">
+                                    <select
+                                      value={editPayMethod}
+                                      onChange={e => setEditPayMethod(e.target.value as any)}
+                                      className="border border-slate-200 rounded-lg p-1 text-[10px]"
+                                    >
+                                      <option value="Efectivo">Efectivo</option>
+                                      <option value="Transferencia">Transferencia</option>
+                                      <option value="Yape">Yape</option>
+                                      <option value="Plin">Plin</option>
+                                    </select>
+                                  </td>
+                                  <td className="px-5 py-3 whitespace-nowrap">
+                                    <input
+                                      type="text"
+                                      value={editPayAmount}
+                                      onChange={e => /^\d*\.?\d*$/.test(e.target.value) && setEditPayAmount(e.target.value)}
+                                      className="border border-slate-200 rounded-lg p-1 text-[10px] w-20 font-bold"
+                                    />
+                                    {editPayError && <span className="block text-red-500 text-[8px] font-bold">{editPayError}</span>}
+                                  </td>
+                                  <td className="px-5 py-3 whitespace-nowrap text-center">
+                                    <button
+                                      onClick={handleSavePayment}
+                                      className="text-emerald-600 hover:text-emerald-800 font-bold text-[10px] px-2 py-1 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition"
+                                    >
+                                      Guardar
+                                    </button>
+                                  </td>
+                                  <td className="px-5 py-3 whitespace-nowrap text-right">
+                                    <button
+                                      onClick={() => setEditPaymentId(null)}
+                                      className="text-slate-400 hover:text-slate-600 p-1 rounded-md"
+                                    >
+                                      <X className="w-3.5 h-3.5" />
+                                    </button>
+                                  </td>
+                                </tr>
+                              );
+                            }
                             
                             return (
                               <tr key={p.id} className="hover:bg-slate-50/55">
@@ -985,6 +1290,15 @@ export default function StudentDossierModal({ student, isOpen, onClose, onDataCh
                                 <td className="px-5 py-3 whitespace-nowrap font-bold text-slate-905 font-mono">
                                   S/. {p.amount}
                                 </td>
+                                <td className="px-5 py-3 whitespace-nowrap text-center">
+                                  <button 
+                                    onClick={() => handleEditPayment(p)}
+                                    className="text-blue-400 hover:text-blue-600 p-1 rounded-md"
+                                    title="Editar pago"
+                                  >
+                                    <Pencil className="w-3.5 h-3.5" />
+                                  </button>
+                                </td>
                                 <td className="px-5 py-3 whitespace-nowrap text-right">
                                   <button 
                                     onClick={() => handleDeletePaymentRow(p.id!, p.studentPackageId, p.amount)}
@@ -998,7 +1312,7 @@ export default function StudentDossierModal({ student, isOpen, onClose, onDataCh
                           })}
                         {payments.filter(p => studentPackages.some(sp => sp.id === p.studentPackageId)).length === 0 && (
                           <tr>
-                            <td colSpan={5} className="px-5 py-8 text-center text-slate-400 italic">No hay historial de cuotas registradas para este alumno.</td>
+                            <td colSpan={6} className="px-5 py-8 text-center text-slate-400 italic">No hay historial de cuotas registradas para este alumno.</td>
                           </tr>
                         )}
                       </tbody>
