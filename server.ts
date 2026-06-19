@@ -2,9 +2,12 @@ import express from 'express';
 import { createServer as createViteServer } from 'vite';
 import path from 'path';
 import fs from 'fs';
-import Database from 'better-sqlite3';
+import { createRequire } from 'module';
+import 'dotenv/config';
 import bcrypt from 'bcryptjs';
 import pg from 'pg';
+
+let Database: any = null;
 
 // Safeguards process-wide against unhandled rejections & crashes
 process.on('unhandledRejection', (reason, promise) => {
@@ -40,6 +43,19 @@ function normalizeRow(row: any) {
     normalized[camel] = val;
   }
   return normalized;
+}
+
+function quoteKeyIfNeeded(key: string) {
+  const lower = key.toLowerCase();
+  const camelcaseList = [
+    'hasboard', 'parentsname', 'birthdate', 'enrollmentdate', 'totalclasses', 
+    'studentid', 'packageid', 'packagename', 'amountpaid', 'totalprice', 
+    'classesused', 'paymentduedate', 'instructorid', 'studentpackageid'
+  ];
+  if (key !== lower || camelcaseList.includes(lower)) {
+    return `"${key}"`;
+  }
+  return key;
 }
 
 class DatabaseService {
@@ -99,8 +115,17 @@ class DatabaseService {
     }
 
     console.log(`🔌 Inicializando base de datos SQLite en: ${dbPath}`);
-    this.sqliteDb = new Database(dbPath);
-    this.isPostgres = false;
+    try {
+      if (!Database) {
+        const requireModule = createRequire(import.meta.url);
+        Database = requireModule('better-sqlite3');
+      }
+      this.sqliteDb = new Database(dbPath);
+      this.isPostgres = false;
+    } catch (sqliteErr: any) {
+      console.error('❌ Error crítico al cargar la base de datos local SQLite (better-sqlite3):', sqliteErr.message || sqliteErr);
+      throw sqliteErr;
+    }
   }
 
   async initPostgresTables() {
@@ -119,10 +144,10 @@ class DatabaseService {
         email TEXT,
         phone TEXT,
         age INTEGER,
-        hasBoard TEXT,
-        parentsName TEXT,
-        birthDate TEXT,
-        enrollmentDate TEXT
+        "hasBoard" TEXT,
+        "parentsName" TEXT,
+        "birthDate" TEXT,
+        "enrollmentDate" TEXT
       );
 
       CREATE TABLE IF NOT EXISTS instructors (
@@ -137,39 +162,61 @@ class DatabaseService {
         id TEXT PRIMARY KEY,
         name TEXT,
         price DOUBLE PRECISION,
-        totalClasses INTEGER,
+        "totalClasses" INTEGER,
         description TEXT
       );
 
       CREATE TABLE IF NOT EXISTS student_packages (
         id TEXT PRIMARY KEY,
-        studentId TEXT,
-        packageId TEXT,
-        packageName TEXT,
-        amountPaid DOUBLE PRECISION,
-        totalPrice DOUBLE PRECISION,
-        classesUsed INTEGER,
-        totalClasses INTEGER,
-        paymentDueDate TEXT,
+        "studentId" TEXT,
+        "packageId" TEXT,
+        "packageName" TEXT,
+        "amountPaid" DOUBLE PRECISION,
+        "totalPrice" DOUBLE PRECISION,
+        "classesUsed" INTEGER,
+        "totalClasses" INTEGER,
+        "paymentDueDate" TEXT,
         status TEXT
       );
 
       CREATE TABLE IF NOT EXISTS classes (
         id TEXT PRIMARY KEY,
         date TEXT,
-        studentId TEXT,
-        instructorId TEXT,
+        "studentId" TEXT,
+        "instructorId" TEXT,
         status TEXT
       );
 
       CREATE TABLE IF NOT EXISTS payments (
         id TEXT PRIMARY KEY,
-        studentPackageId TEXT,
+        "studentPackageId" TEXT,
         amount DOUBLE PRECISION,
         date TEXT,
         method TEXT,
         notes TEXT
       );
+
+      -- Safe schema migration for pre-existing tables to prevent missing column errors
+      ALTER TABLE students ADD COLUMN IF NOT EXISTS "hasBoard" TEXT;
+      ALTER TABLE students ADD COLUMN IF NOT EXISTS "parentsName" TEXT;
+      ALTER TABLE students ADD COLUMN IF NOT EXISTS "birthDate" TEXT;
+      ALTER TABLE students ADD COLUMN IF NOT EXISTS "enrollmentDate" TEXT;
+
+      ALTER TABLE packages ADD COLUMN IF NOT EXISTS "totalClasses" INTEGER;
+
+      ALTER TABLE student_packages ADD COLUMN IF NOT EXISTS "studentId" TEXT;
+      ALTER TABLE student_packages ADD COLUMN IF NOT EXISTS "packageId" TEXT;
+      ALTER TABLE student_packages ADD COLUMN IF NOT EXISTS "packageName" TEXT;
+      ALTER TABLE student_packages ADD COLUMN IF NOT EXISTS "amountPaid" DOUBLE PRECISION;
+      ALTER TABLE student_packages ADD COLUMN IF NOT EXISTS "totalPrice" DOUBLE PRECISION;
+      ALTER TABLE student_packages ADD COLUMN IF NOT EXISTS "classesUsed" INTEGER;
+      ALTER TABLE student_packages ADD COLUMN IF NOT EXISTS "totalClasses" INTEGER;
+      ALTER TABLE student_packages ADD COLUMN IF NOT EXISTS "paymentDueDate" TEXT;
+
+      ALTER TABLE classes ADD COLUMN IF NOT EXISTS "studentId" TEXT;
+      ALTER TABLE classes ADD COLUMN IF NOT EXISTS "instructorId" TEXT;
+
+      ALTER TABLE payments ADD COLUMN IF NOT EXISTS "studentPackageId" TEXT;
     `);
   }
 
@@ -367,7 +414,7 @@ async function startServer() {
     const s = req.body;
     const id = s.id || Math.random().toString(36).substr(2, 9);
     await db.prepare(
-      'INSERT INTO students (id, name, email, phone, age, hasBoard, parentsName, birthDate, enrollmentDate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+      'INSERT INTO students (id, name, email, phone, age, "hasBoard", "parentsName", "birthDate", "enrollmentDate") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
     ).run(id, s.name, s.email, s.phone, s.age, s.hasBoard, s.parentsName, s.birthDate, s.enrollmentDate);
     res.json({ id, ...s });
   });
@@ -376,7 +423,7 @@ async function startServer() {
     const { id } = req.params;
     const s = req.body;
     await db.prepare(
-      'UPDATE students SET name = ?, email = ?, phone = ?, age = ?, hasBoard = ?, parentsName = ?, birthDate = ? WHERE id = ?'
+      'UPDATE students SET name = ?, email = ?, phone = ?, age = ?, "hasBoard" = ?, "parentsName" = ?, "birthDate" = ? WHERE id = ?'
     ).run(s.name, s.email, s.phone, s.age, s.hasBoard, s.parentsName, s.birthDate, id);
     res.json({ id, ...s });
   });
@@ -406,7 +453,7 @@ async function startServer() {
     const p = req.body;
     const id = p.id || Math.random().toString(36).substr(2, 9);
     await db.prepare(
-      'INSERT INTO packages (id, name, price, totalClasses, description) VALUES (?, ?, ?, ?, ?)'
+      'INSERT INTO packages (id, name, price, "totalClasses", description) VALUES (?, ?, ?, ?, ?)'
     ).run(id, p.name, p.price, p.totalClasses, p.description);
     res.json({ id, ...p });
   });
@@ -415,7 +462,7 @@ async function startServer() {
     const { id } = req.params;
     const p = req.body;
     await db.prepare(
-      'UPDATE packages SET name = ?, price = ?, totalClasses = ?, description = ? WHERE id = ?'
+      'UPDATE packages SET name = ?, price = ?, "totalClasses" = ?, description = ? WHERE id = ?'
     ).run(p.name, p.price, p.totalClasses, p.description, id);
     res.json({ id, ...p });
   });
@@ -430,7 +477,7 @@ async function startServer() {
     const sp = req.body;
     const id = sp.id || Math.random().toString(36).substr(2, 9);
     await db.prepare(
-      'INSERT INTO student_packages (id, studentId, packageId, packageName, amountPaid, totalPrice, classesUsed, totalClasses, paymentDueDate, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+      'INSERT INTO student_packages (id, "studentId", "packageId", "packageName", "amountPaid", "totalPrice", "classesUsed", "totalClasses", "paymentDueDate", status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
     ).run(id, sp.studentId, sp.packageId, sp.packageName, sp.amountPaid, sp.totalPrice, sp.classesUsed, sp.totalClasses, sp.paymentDueDate, sp.status);
     res.json({ id, ...sp });
   });
@@ -440,7 +487,7 @@ async function startServer() {
     const sp = req.body;
     const keys = Object.keys(sp);
     const values = Object.values(sp);
-    const setClause = keys.map(k => `${k} = ?`).join(', ');
+    const setClause = keys.map(k => `${quoteKeyIfNeeded(k)} = ?`).join(', ');
     await db.prepare(`UPDATE student_packages SET ${setClause} WHERE id = ?`).run([...values, id]);
     res.json({ id, ...sp });
   });
@@ -455,7 +502,7 @@ async function startServer() {
     const c = req.body;
     const id = c.id || Math.random().toString(36).substr(2, 9);
     await db.prepare(
-      'INSERT INTO classes (id, date, studentId, instructorId, status) VALUES (?, ?, ?, ?, ?)'
+      'INSERT INTO classes (id, date, "studentId", "instructorId", status) VALUES (?, ?, ?, ?, ?)'
     ).run(id, c.date, c.studentId, c.instructorId, c.status);
     res.json({ id, ...c });
   });
@@ -465,7 +512,7 @@ async function startServer() {
     const c = req.body;
     const keys = Object.keys(c);
     const values = Object.values(c);
-    const setClause = keys.map(k => `${k} = ?`).join(', ');
+    const setClause = keys.map(k => `${quoteKeyIfNeeded(k)} = ?`).join(', ');
     await db.prepare(`UPDATE classes SET ${setClause} WHERE id = ?`).run([...values, id]);
     res.json({ id, ...c });
   });
@@ -541,22 +588,22 @@ async function startServer() {
           await client.query('DELETE FROM payments');
 
           for (const s of students) {
-            await client.query('INSERT INTO students (id, name, email, phone, age, hasBoard, parentsName, birthDate, enrollmentDate) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)', [s.id, s.name, s.email || '', s.phone || '', s.age ?? 0, s.hasBoard || 'No', s.parentsName || '', s.birthDate || '', s.enrollmentDate || '']);
+            await client.query('INSERT INTO students (id, name, email, phone, age, "hasBoard", "parentsName", "birthDate", "enrollmentDate") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)', [s.id, s.name, s.email || '', s.phone || '', s.age ?? 0, s.hasBoard || 'No', s.parentsName || '', s.birthDate || '', s.enrollmentDate || '']);
           }
           for (const i of instructors) {
             await client.query('INSERT INTO instructors (id, name, specialty, phone, email) VALUES ($1, $2, $3, $4, $5)', [i.id, i.name, i.specialty || '', i.phone || '', i.email || '']);
           }
           for (const p of packages) {
-            await client.query('INSERT INTO packages (id, name, price, totalClasses, description) VALUES ($1, $2, $3, $4, $5)', [p.id, p.name, p.price, p.totalClasses, p.description || '']);
+            await client.query('INSERT INTO packages (id, name, price, "totalClasses", description) VALUES ($1, $2, $3, $4, $5)', [p.id, p.name, p.price, p.totalClasses, p.description || '']);
           }
           for (const sp of studentPackages) {
-            await client.query('INSERT INTO student_packages (id, studentId, packageId, packageName, amountPaid, totalPrice, classesUsed, totalClasses, paymentDueDate, status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)', [sp.id, sp.studentId, sp.packageId, sp.packageName || '', sp.amountPaid ?? 0, sp.totalPrice ?? 0, sp.classesUsed ?? 0, sp.totalClasses ?? 0, sp.paymentDueDate || '', sp.status || 'active']);
+            await client.query('INSERT INTO student_packages (id, "studentId", "packageId", "packageName", "amountPaid", "totalPrice", "classesUsed", "totalClasses", "paymentDueDate", status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)', [sp.id, sp.studentId, sp.packageId, sp.packageName || '', sp.amountPaid ?? 0, sp.totalPrice ?? 0, sp.classesUsed ?? 0, sp.totalClasses ?? 0, sp.paymentDueDate || '', sp.status || 'active']);
           }
           for (const c of classes) {
-            await client.query('INSERT INTO classes (id, date, studentId, instructorId, status) VALUES ($1, $2, $3, $4, $5)', [c.id, c.date, c.studentId, c.instructorId, c.status || 'scheduled']);
+            await client.query('INSERT INTO classes (id, date, "studentId", "instructorId", status) VALUES ($1, $2, $3, $4, $5)', [c.id, c.date, c.studentId, c.instructorId, c.status || 'scheduled']);
           }
           for (const p of payments) {
-            await client.query('INSERT INTO payments (id, studentPackageId, amount, date, method, notes) VALUES ($1, $2, $3, $4, $5, $6)', [p.id, p.studentPackageId, p.amount ?? 0, p.date || '', p.method || 'Efectivo', p.notes || '']);
+            await client.query('INSERT INTO payments (id, "studentPackageId", amount, date, method, notes) VALUES ($1, $2, $3, $4, $5, $6)', [p.id, p.studentPackageId, p.amount ?? 0, p.date || '', p.method || 'Efectivo', p.notes || '']);
           }
           await client.query('COMMIT');
         } catch (txErr) {
@@ -574,7 +621,7 @@ async function startServer() {
           db.sqliteDb.prepare('DELETE FROM classes').run();
           db.sqliteDb.prepare('DELETE FROM payments').run();
 
-          const insertStudent = db.sqliteDb.prepare('INSERT INTO students (id, name, email, phone, age, hasBoard, parentsName, birthDate, enrollmentDate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
+          const insertStudent = db.sqliteDb.prepare('INSERT INTO students (id, name, email, phone, age, "hasBoard", "parentsName", "birthDate", "enrollmentDate") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
           for (const s of students) {
             insertStudent.run(s.id, s.name, s.email || '', s.phone || '', s.age ?? 0, s.hasBoard || 'No', s.parentsName || '', s.birthDate || '', s.enrollmentDate || '');
           }
@@ -584,22 +631,22 @@ async function startServer() {
             insertInstructor.run(i.id, i.name, i.specialty || '', i.phone || '', i.email || '');
           }
 
-          const insertPackage = db.sqliteDb.prepare('INSERT INTO packages (id, name, price, totalClasses, description) VALUES (?, ?, ?, ?, ?)');
+          const insertPackage = db.sqliteDb.prepare('INSERT INTO packages (id, name, price, "totalClasses", description) VALUES (?, ?, ?, ?, ?)');
           for (const p of packages) {
             insertPackage.run(p.id, p.name, p.price, p.totalClasses, p.description || '');
           }
 
-          const insertStudentPackage = db.sqliteDb.prepare('INSERT INTO student_packages (id, studentId, packageId, packageName, amountPaid, totalPrice, classesUsed, totalClasses, paymentDueDate, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+          const insertStudentPackage = db.sqliteDb.prepare('INSERT INTO student_packages (id, "studentId", "packageId", "packageName", "amountPaid", "totalPrice", "classesUsed", "totalClasses", "paymentDueDate", status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
           for (const sp of studentPackages) {
             insertStudentPackage.run(sp.id, sp.studentId, sp.packageId, sp.packageName || '', sp.amountPaid ?? 0, sp.totalPrice ?? 0, sp.classesUsed ?? 0, sp.totalClasses ?? 0, sp.paymentDueDate || '', sp.status || 'active');
           }
 
-          const insertClass = db.sqliteDb.prepare('INSERT INTO classes (id, date, studentId, instructorId, status) VALUES (?, ?, ?, ?, ?)');
+          const insertClass = db.sqliteDb.prepare('INSERT INTO classes (id, date, "studentId", "instructorId", status) VALUES (?, ?, ?, ?, ?)');
           for (const c of classes) {
             insertClass.run(c.id, c.date, c.studentId, c.instructorId, c.status || 'scheduled');
           }
 
-          const insertPayment = db.sqliteDb.prepare('INSERT INTO payments (id, studentPackageId, amount, date, method, notes) VALUES (?, ?, ?, ?, ?, ?)');
+          const insertPayment = db.sqliteDb.prepare('INSERT INTO payments (id, "studentPackageId", amount, date, method, notes) VALUES (?, ?, ?, ?, ?, ?)');
           for (const p of payments) {
             insertPayment.run(p.id, p.studentPackageId, p.amount ?? 0, p.date || '', p.method || 'Efectivo', p.notes || '');
           }
