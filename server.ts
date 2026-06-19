@@ -627,7 +627,29 @@ async function startServer() {
 
   // Overwrite Sync Database state at once
   app.post('/api/sync/overwrite', async (req, res) => {
-    const { students = [], instructors = [], packages = [], studentPackages = [], classes = [], payments = [] } = req.body;
+    let { students = [], instructors = [], packages = [], studentPackages = [], classes = [], payments = [] } = req.body;
+    
+    // Deduplicate students by normalized name: keep first occurrence (seed data has richer fields)
+    if (students.length > 0) {
+      const nameMap = new Map<string, any>();
+      const idRemap = new Map<string, string>();
+      for (const s of students) {
+        const key = s.name ? s.name.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') : s.id;
+        if (nameMap.has(key)) {
+          idRemap.set(s.id, nameMap.get(key).id);
+        } else {
+          nameMap.set(key, s);
+        }
+      }
+      if (nameMap.size < students.length) {
+        students = Array.from(nameMap.values());
+        // Remap studentPackage references from removed student IDs to kept IDs
+        for (const sp of studentPackages) {
+          const newId = idRemap.get(sp.studentId);
+          if (newId) sp.studentId = newId;
+        }
+      }
+    }
     
     try {
       if (db.isPostgres) {

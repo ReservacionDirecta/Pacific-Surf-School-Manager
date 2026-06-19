@@ -300,6 +300,27 @@ export const syncFromGoogleSheets = async (spreadsheetId: string): Promise<SyncR
       ];
     }
 
+    // Deduplicate parsedStudents by normalized name before sending to server
+    if (parsedStudents.length > 0) {
+      const nameMap = new Map<string, Student>();
+      const idRemap = new Map<string, string>();
+      for (const s of parsedStudents) {
+        const key = s.name ? s.name.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') : s.id!;
+        if (nameMap.has(key)) {
+          idRemap.set(s.id!, nameMap.get(key)!.id!);
+        } else {
+          nameMap.set(key, s);
+        }
+      }
+      if (nameMap.size < parsedStudents.length) {
+        parsedStudents = Array.from(nameMap.values());
+        for (const sp of parsedStudentPackages) {
+          const newId = idRemap.get(sp.studentId);
+          if (newId) sp.studentId = newId;
+        }
+      }
+    }
+
     // Overwrite backend SQLite with our newly parsed contents
     const syncPayload = {
       students: parsedStudents,
