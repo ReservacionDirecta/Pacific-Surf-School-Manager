@@ -44,10 +44,20 @@ class DatabaseService {
         console.log('🔌 Conectando a PostgreSQL de Railway...');
         this.pgPool = new pg.Pool({
           connectionString: DATABASE_URL,
-          ssl: DATABASE_URL.includes('localhost') || DATABASE_URL.includes('127.0.0.1') ? false : { rejectUnauthorized: false }
+          ssl: DATABASE_URL.includes('localhost') || DATABASE_URL.includes('127.0.0.1') ? false : { rejectUnauthorized: false },
+          connectionTimeoutMillis: 3500 // 3.5 seconds connection timeout
         });
-        // Test connection
-        await this.pgPool.query('SELECT NOW()');
+        
+        // Test connection with a promise race to prevent any stalling
+        const connectTimeout = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('El intento de conexión a PostgreSQL superó el límite de 3.5 segundos')), 3500)
+        );
+        
+        await Promise.race([
+          this.pgPool.query('SELECT NOW()'),
+          connectTimeout
+        ]);
+
         this.isPostgres = true;
         console.log('✅ Conexión exitosa a PostgreSQL Railway.');
         
@@ -56,6 +66,14 @@ class DatabaseService {
         return;
       } catch (err) {
         console.error('❌ Error al conectar a PostgreSQL, se usará SQLite local:', err);
+        if (this.pgPool) {
+          try {
+            await this.pgPool.end();
+          } catch (e) {
+            // ignore
+          }
+          this.pgPool = null;
+        }
       }
     }
 
@@ -80,10 +98,10 @@ class DatabaseService {
         email TEXT,
         phone TEXT,
         age INTEGER,
-        "hasBoard" TEXT,
-        "parentsName" TEXT,
-        "birthDate" TEXT,
-        "enrollmentDate" TEXT
+        hasBoard TEXT,
+        parentsName TEXT,
+        birthDate TEXT,
+        enrollmentDate TEXT
       );
 
       CREATE TABLE IF NOT EXISTS instructors (
@@ -98,34 +116,34 @@ class DatabaseService {
         id TEXT PRIMARY KEY,
         name TEXT,
         price DOUBLE PRECISION,
-        "totalClasses" INTEGER,
+        totalClasses INTEGER,
         description TEXT
       );
 
       CREATE TABLE IF NOT EXISTS student_packages (
         id TEXT PRIMARY KEY,
-        "studentId" TEXT,
-        "packageId" TEXT,
-        "packageName" TEXT,
-        "amountPaid" DOUBLE PRECISION,
-        "totalPrice" DOUBLE PRECISION,
-        "classesUsed" INTEGER,
-        "totalClasses" INTEGER,
-        "paymentDueDate" TEXT,
+        studentId TEXT,
+        packageId TEXT,
+        packageName TEXT,
+        amountPaid DOUBLE PRECISION,
+        totalPrice DOUBLE PRECISION,
+        classesUsed INTEGER,
+        totalClasses INTEGER,
+        paymentDueDate TEXT,
         status TEXT
       );
 
       CREATE TABLE IF NOT EXISTS classes (
         id TEXT PRIMARY KEY,
         date TEXT,
-        "studentId" TEXT,
-        "instructorId" TEXT,
+        studentId TEXT,
+        instructorId TEXT,
         status TEXT
       );
 
       CREATE TABLE IF NOT EXISTS payments (
         id TEXT PRIMARY KEY,
-        "studentPackageId" TEXT,
+        studentPackageId TEXT,
         amount DOUBLE PRECISION,
         date TEXT,
         method TEXT,
@@ -502,22 +520,22 @@ async function startServer() {
           await client.query('DELETE FROM payments');
 
           for (const s of students) {
-            await client.query('INSERT INTO students (id, name, email, phone, age, "hasBoard", "parentsName", "birthDate", "enrollmentDate") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)', [s.id, s.name, s.email || '', s.phone || '', s.age ?? 0, s.hasBoard || 'No', s.parentsName || '', s.birthDate || '', s.enrollmentDate || '']);
+            await client.query('INSERT INTO students (id, name, email, phone, age, hasBoard, parentsName, birthDate, enrollmentDate) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)', [s.id, s.name, s.email || '', s.phone || '', s.age ?? 0, s.hasBoard || 'No', s.parentsName || '', s.birthDate || '', s.enrollmentDate || '']);
           }
           for (const i of instructors) {
             await client.query('INSERT INTO instructors (id, name, specialty, phone, email) VALUES ($1, $2, $3, $4, $5)', [i.id, i.name, i.specialty || '', i.phone || '', i.email || '']);
           }
           for (const p of packages) {
-            await client.query('INSERT INTO packages (id, name, price, "totalClasses", description) VALUES ($1, $2, $3, $4, $5)', [p.id, p.name, p.price, p.totalClasses, p.description || '']);
+            await client.query('INSERT INTO packages (id, name, price, totalClasses, description) VALUES ($1, $2, $3, $4, $5)', [p.id, p.name, p.price, p.totalClasses, p.description || '']);
           }
           for (const sp of studentPackages) {
-            await client.query('INSERT INTO student_packages (id, "studentId", "packageId", "packageName", "amountPaid", "totalPrice", "classesUsed", "totalClasses", "paymentDueDate", status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)', [sp.id, sp.studentId, sp.packageId, sp.packageName || '', sp.amountPaid ?? 0, sp.totalPrice ?? 0, sp.classesUsed ?? 0, sp.totalClasses ?? 0, sp.paymentDueDate || '', sp.status || 'active']);
+            await client.query('INSERT INTO student_packages (id, studentId, packageId, packageName, amountPaid, totalPrice, classesUsed, totalClasses, paymentDueDate, status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)', [sp.id, sp.studentId, sp.packageId, sp.packageName || '', sp.amountPaid ?? 0, sp.totalPrice ?? 0, sp.classesUsed ?? 0, sp.totalClasses ?? 0, sp.paymentDueDate || '', sp.status || 'active']);
           }
           for (const c of classes) {
-            await client.query('INSERT INTO classes (id, date, "studentId", "instructorId", status) VALUES ($1, $2, $3, $4, $5)', [c.id, c.date, c.studentId, c.instructorId, c.status || 'scheduled']);
+            await client.query('INSERT INTO classes (id, date, studentId, instructorId, status) VALUES ($1, $2, $3, $4, $5)', [c.id, c.date, c.studentId, c.instructorId, c.status || 'scheduled']);
           }
           for (const p of payments) {
-            await client.query('INSERT INTO payments (id, "studentPackageId", amount, date, method, notes) VALUES ($1, $2, $3, $4, $5, $6)', [p.id, p.studentPackageId, p.amount ?? 0, p.date || '', p.method || 'Efectivo', p.notes || '']);
+            await client.query('INSERT INTO payments (id, studentPackageId, amount, date, method, notes) VALUES ($1, $2, $3, $4, $5, $6)', [p.id, p.studentPackageId, p.amount ?? 0, p.date || '', p.method || 'Efectivo', p.notes || '']);
           }
           await client.query('COMMIT');
         } catch (txErr) {
