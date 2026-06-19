@@ -184,15 +184,18 @@ export default function GoogleSheetsSync() {
       // 1. Export Alumnos
       addLog(`Exportando ${alumnos.length} Alumnos...`);
       const alumnosValues = [
-        ['ID', 'Nombre', 'Email', 'Telefono', 'Fecha Registro', 'Nivel'],
-        ...alumnos.map(a => [a.id, a.name, a.email || '', a.phone || '', a.enrollmentDate || '', ''])
+        ['ID', 'Nombre', 'Email', 'Teléfono', 'Edad', '¿Tiene Tabla?', 'Padres', 'Fecha Nacimiento', 'Inscripción'],
+        ...alumnos.map(a => [
+          a.id, a.name, a.email || '', a.phone || '', a.age ?? 0,
+          a.hasBoard || 'No', a.parentsName || '', a.birthDate || '', a.enrollmentDate || ''
+        ])
       ];
-      await writeSheetData(activeToken, spreadsheetId, 'Alumnos!A1:F2000', alumnosValues);
+      await writeSheetData(activeToken, spreadsheetId, 'Alumnos!A1:I2000', alumnosValues);
 
       // 2. Export Instructores
       addLog(`Exportando ${instructores.length} Instructores...`);
       const instValues = [
-        ['ID', 'Nombre', 'Email', 'Telefono'],
+        ['ID', 'Nombre', 'Email', 'Teléfono'],
         ...instructores.map(i => [i.id, i.name, i.email || '', i.phone || ''])
       ];
       await writeSheetData(activeToken, spreadsheetId, 'Instructores!A1:D500', instValues);
@@ -227,7 +230,7 @@ export default function GoogleSheetsSync() {
       // 5. Export Pagos
       addLog(`Exportando ${pagos.length} Pagos registrados...`);
       const pagosValues = [
-        ['ID', 'Paquete Alumno ID', 'Monto', 'Fecha', 'Metodo', 'Notas'],
+        ['ID', 'Paquete Alumno ID', 'Monto', 'Fecha', 'Método', 'Notas'],
         ...pagos.map(p => [p.id || '', p.studentPackageId, p.amount ?? 0, p.date || '', p.method || '', p.notes || ''])
       ];
       await writeSheetData(activeToken, spreadsheetId, 'Pagos registrados!A1:F5000', pagosValues);
@@ -384,7 +387,7 @@ export default function GoogleSheetsSync() {
     try {
       // 1. Fetch Students sheet
       addLog('Leyendo datos de Alumnos desde Sheets...');
-      const studentsRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Alumnos!A1:F2000`, {
+      const studentsRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Alumnos!A1:I2000`, {
         headers: { Authorization: `Bearer ${activeToken}` }
       });
       if (!studentsRes.ok) {
@@ -399,8 +402,12 @@ export default function GoogleSheetsSync() {
         const idIdx = headers.indexOf('id');
         const nameIdx = headers.indexOf('nombre');
         const emailIdx = headers.indexOf('email');
-        const phoneIdx = headers.indexOf('telefono');
-        const enrollIdx = headers.indexOf('fecha registro') !== -1 ? headers.indexOf('fecha registro') : headers.indexOf('enrollmentdate');
+        const phoneIdx = headers.findIndex((h: string) => h.includes('teléfono') || h.includes('telefono'));
+        const ageIdx = headers.indexOf('edad');
+        const boardIdx = headers.findIndex((h: string) => h.includes('tabla'));
+        const parentsIdx = headers.findIndex((h: string) => h.includes('padre'));
+        const birthIdx = headers.findIndex((h: string) => h.includes('nacimiento'));
+        const enrollIdx = headers.findIndex((h: string) => h.includes('inscrip') || h.includes('fecha'));
         
         for (let i = 1; i < studentsRows.length; i++) {
           const row = studentsRows[i];
@@ -411,7 +418,11 @@ export default function GoogleSheetsSync() {
             name,
             email: row[emailIdx] || '',
             phone: row[phoneIdx] || '',
-            enrollmentDate: row[enrollIdx] || new Date().toISOString()
+            age: ageIdx !== -1 && row[ageIdx] ? Number(row[ageIdx]) : 0,
+            hasBoard: boardIdx !== -1 && row[boardIdx] ? row[boardIdx].trim() : 'No',
+            parentsName: parentsIdx !== -1 && row[parentsIdx] ? row[parentsIdx].trim() : '',
+            birthDate: birthIdx !== -1 && row[birthIdx] ? row[birthIdx] : '',
+            enrollmentDate: enrollIdx !== -1 && row[enrollIdx] ? row[enrollIdx] : ''
           });
         }
       }
@@ -431,7 +442,7 @@ export default function GoogleSheetsSync() {
         const idIdx = headers.indexOf('id');
         const nameIdx = headers.indexOf('nombre');
         const emailIdx = headers.indexOf('email');
-        const phoneIdx = headers.indexOf('telefono');
+        const phoneIdx = headers.findIndex((h: string) => h.includes('teléfono') || h.includes('telefono'));
         
         for (let i = 1; i < instRows.length; i++) {
           const row = instRows[i];
