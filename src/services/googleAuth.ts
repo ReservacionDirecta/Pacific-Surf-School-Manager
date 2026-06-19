@@ -12,21 +12,46 @@ provider.addScope('https://www.googleapis.com/auth/spreadsheets');
 let isSigningIn = false;
 let cachedAccessToken: string | null = null;
 
+const STORAGE_KEY = 'google_sheets_token';
+
+function saveToken(token: string) {
+  cachedAccessToken = token;
+  try { sessionStorage.setItem(STORAGE_KEY, token); } catch { /* ignore */ }
+}
+
+function restoreToken(): string | null {
+  const stored = cachedAccessToken;
+  if (stored) return stored;
+  try {
+    const t = sessionStorage.getItem(STORAGE_KEY);
+    if (t) { cachedAccessToken = t; return t; }
+  } catch { /* ignore */ }
+  return null;
+}
+
+function clearToken() {
+  cachedAccessToken = null;
+  try { sessionStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
+}
+
 // Initialize auth state listener. Call this on app load.
 export const initAuth = (
   onAuthSuccess?: (user: User, token: string) => void,
   onAuthFailure?: () => void
 ) => {
-  return onAuthStateChanged(auth, async (user: User | null) => {
+  return onAuthStateChanged(auth, (user: User | null) => {
     if (user) {
-      if (cachedAccessToken) {
-        if (onAuthSuccess) onAuthSuccess(user, cachedAccessToken);
-      } else if (!isSigningIn) {
-        cachedAccessToken = null;
+      const token = restoreToken();
+      if (token) {
+        if (onAuthSuccess) onAuthSuccess(user, token);
+        return;
+      }
+      if (!isSigningIn) {
+        clearToken();
         if (onAuthFailure) onAuthFailure();
       }
     } else {
-      cachedAccessToken = null;
+      clearToken();
       if (onAuthFailure) onAuthFailure();
     }
   });
@@ -42,8 +67,8 @@ export const googleSignIn = async (): Promise<{ user: User; accessToken: string 
       throw new Error('Failed to get access token from Firebase Auth');
     }
 
-    cachedAccessToken = credential.accessToken;
-    return { user: result.user, accessToken: cachedAccessToken };
+    saveToken(credential.accessToken);
+    return { user: result.user, accessToken: cachedAccessToken! };
   } catch (error: any) {
     console.error('Sign in error:', error);
     throw error;
@@ -53,10 +78,10 @@ export const googleSignIn = async (): Promise<{ user: User; accessToken: string 
 };
 
 export const getAccessToken = async (): Promise<string | null> => {
-  return cachedAccessToken;
+  return restoreToken();
 };
 
 export const logoutGoogle = async () => {
   await auth.signOut();
-  cachedAccessToken = null;
+  clearToken();
 };
