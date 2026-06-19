@@ -345,6 +345,205 @@ async function startServer() {
     }
   });
 
+  // Google OAuth Verification Compliance Routes
+  app.get('/privacy-policy', (req, res) => {
+    res.send(`
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Política de Privacidad - Pacific Surf School Manager</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;505;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col justify-between">
+    <header class="bg-gradient-to-r from-slate-900 via-slate-800 to-cyan-950 border-b border-slate-700 py-6 px-4 shadow-sm">
+        <div class="max-w-4xl mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <span class="text-3xl">🏄‍♂️</span>
+                <div>
+                    <h1 class="text-xl font-extrabold text-white tracking-tight">Pacific Surf School</h1>
+                    <p class="text-xs text-cyan-400 font-bold tracking-widest uppercase mt-0.5">Plataforma de Gestión Interna</p>
+                </div>
+            </div>
+            <a href="/" class="text-xs font-bold text-slate-350 hover:text-white px-3.5 py-2 border border-slate-700 rounded-xl transition bg-slate-800/50">Regresar al Sistema</a>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-4xl w-full mx-auto px-4 py-12 md:py-16">
+        <article class="bg-white p-6 md:p-10 rounded-2xl shadow-sm border border-slate-100 space-y-6">
+            <div class="border-b border-slate-100 pb-5">
+                <h2 class="text-3xl font-black text-slate-900 tracking-tight">Política de Privacidad</h2>
+                <p class="text-xs font-mono text-slate-450 mt-1 uppercase tracking-wider font-bold">Última actualización: 19 de Junio de 2026</p>
+            </div>
+
+            <section class="space-y-3">
+                <h3 class="text-lg font-bold text-slate-900">1. Introducción y Propósito</h3>
+                <p class="text-sm text-slate-650 leading-relaxed">
+                    Esta Política de Privacidad describe cómo se recopilan, utilizan, protegen y manejan sus datos personales cuando interactúa con el software interno de administración de <strong>Pacific Surf School Manager</strong> ("la Aplicación"). Valoramos profundamente la privacidad de nuestros entrenadores, personal académico y alumnos de la escuela.
+                </p>
+            </section>
+
+            <section class="space-y-3">
+                <h3 class="text-lg font-bold text-slate-900">2. Uso de la API de Google de forma Segura (OAuth Scopes)</h3>
+                <p class="text-sm text-slate-650 leading-relaxed">
+                    Nuestra aplicación se integra directamente con <strong>Google Sheets (Hojas de cálculo de Google)</strong> para brindar sincronización bidireccional de datos escolares clave. El uso solicitado de las credenciales de Google se fundamenta exclusivamente en la productividad administrativa de la escuela:
+                </p>
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-150 space-y-2">
+                    <p class="text-xs text-slate-700 font-semibold flex items-center gap-2">
+                        <span class="text-emerald-600 font-bold">•</span>
+                        <strong>Controlador de Ámbito solicitado:</strong> <code>https://www.googleapis.com/auth/spreadsheets</code>
+                    </p>
+                    <p class="text-xs text-slate-600 leading-relaxed">
+                        Este permiso nos permite leer, editar y crear de forma remota las pestañas dedicadas a "Alumnos", "Instructores", "Paquetes", "Clases" y "Pagos de Caja" de tu Hoja de Cálculo seleccionada, evitando duplicidades de datos y permitiéndote conservar un respaldo instantáneo bajo control total de tu escuela.
+                    </p>
+                </div>
+            </section>
+
+            <section class="space-y-3">
+                <h3 class="text-lg font-bold text-slate-900">3. Limitación en la Retención y Transferencia de Información</h3>
+                <p class="text-sm text-slate-650 leading-relaxed">
+                    <strong>Absolutamente ninguna información es vendida, compartida ni transferida</strong> a terceras partes externas a Pacific Surf School o Google. La Aplicación sigue rigurosas directrices de seguridad para garantizar que su Workspace se mantenga completamente blindado:
+                </p>
+                <ul class="list-disc pl-5 text-sm text-slate-650 space-y-1.5">
+                    <li>Los tokens de acceso de Google OAuth obtenidos durante la vinculación se conservan <strong>únicamente en la memoria volátil del servidor (in-memory caching)</strong> y jamás se guardan permanentemente en el disco del equipo para evitar vulneración de credenciales.</li>
+                    <li>Los datos generados en la administración (Fichas de alumnos, matrículas, cobro de cuotas) se conservan de forma segura localmente en un motor de base de datos SQLite en contenedores en la nube propiedad exclusiva de la institución.</li>
+                </ul>
+            </section>
+
+            <section class="space-y-3">
+                <h3 class="text-lg font-bold text-slate-900">4. Almacenamiento Local de Credenciales Escolares</h3>
+                <p class="text-sm text-slate-650 leading-relaxed">
+                    Las contraseñas de instructores y directivos escolares se procesan mediante <strong>criptografía irreversible unidireccional (Bcrypt de alta iteración)</strong> para garantizar la máxima seguridad contra accesos no autorizados a la aplicación.
+                </p>
+            </section>
+
+            <section class="space-y-3">
+                <h3 class="text-lg font-bold text-slate-900">5. Derechos de los Usuarios y Control de Datos</h3>
+                <p class="text-sm text-slate-650 leading-relaxed">
+                    Usted puede desvincular o revocar de inmediato todos los permisos concedidos a nuestra Aplicación en cualquier momento accediendo al panel de seguridad de su cuenta de Google en <a href="https://myaccount.google.com/permissions" target="_blank" class="text-cyan-600 underline font-semibold hover:text-cyan-700">Google Client Security</a> o simplemente haciendo clic en "Cerrar Conexión" en el Tablero de Hojas de Cálculo de nuestra aplicación.
+                </p>
+            </section>
+
+            <section class="space-y-3 border-t border-slate-100 pt-5">
+                <h3 class="text-lg font-bold text-slate-900">6. Preguntas y Soporte</h3>
+                <p class="text-sm text-slate-650 leading-relaxed">
+                    Si tienes dudas sobre nuestras prácticas de privacidad o seguridad técnica, puedes contactar con el equipo de soporte de Pacific Surf School escribiendo directamente a <a href="mailto:info@pacificsurfschool.com" class="text-cyan-600 font-semibold underline">info@pacificsurfschool.com</a>.
+                </p>
+            </section>
+        </article>
+    </main>
+
+    <footer class="bg-slate-900 border-t border-slate-800 py-8 px-4 text-center text-xs text-slate-450 mt-12">
+        <div class="max-w-4xl mx-auto space-y-2">
+            <p>© 2026 Pacific Surf School S.A.C. Todos los derechos reservados.</p>
+            <p class="text-slate-500">Este sistema cuenta con integraciones oficiales del ecosistema de Google Cloud Platform y cumple con los requerimientos regulados por el Plan de Verificación de Aplicaciones.</p>
+        </div>
+    </footer>
+</body>
+</html>
+    `);
+  });
+
+  app.get('/terms-of-service', (req, res) => {
+    res.send(`
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Términos de Servicio - Pacific Surf School Manager</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;505;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col justify-between">
+    <header class="bg-gradient-to-r from-slate-900 via-slate-800 to-cyan-950 border-b border-slate-700 py-6 px-4 shadow-sm">
+        <div class="max-w-4xl mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <span class="text-3xl">🏄‍♂️</span>
+                <div>
+                    <h1 class="text-xl font-extrabold text-white tracking-tight">Pacific Surf School</h1>
+                    <p class="text-xs text-cyan-400 font-bold tracking-widest uppercase mt-0.5">Plataforma de Gestión Interna</p>
+                </div>
+            </div>
+            <a href="/" class="text-xs font-bold text-slate-355 hover:text-white px-3.5 py-2 border border-slate-700 rounded-xl transition bg-slate-800/50">Regresar al Sistema</a>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-4xl w-full mx-auto px-4 py-12 md:py-16">
+        <article class="bg-white p-6 md:p-10 rounded-2xl shadow-sm border border-slate-100 space-y-6">
+            <div class="border-b border-slate-100 pb-5">
+                <h2 class="text-3xl font-black text-slate-900 tracking-tight">Términos de Servicio</h2>
+                <p class="text-xs font-mono text-slate-450 mt-1 uppercase tracking-wider font-bold">Última actualización: 19 de Junio de 2026</p>
+            </div>
+
+            <section class="space-y-3">
+                <h3 class="text-lg font-bold text-slate-900">1. Aceptación de los Términos</h3>
+                <p class="text-sm text-slate-650 leading-relaxed">
+                    Al acceder o utilizar Pacific Surf School Manager (el "Servicio"), un software integral para coordinar calendarios, cuotas escolares y sincronización de Sheets de Pacific Surf School, usted acepta quedar vinculado de inmediato por estos Términos de Servicio. Si no está de acuerdo, por favor absténgase de usar el software.
+                </p>
+            </section>
+
+            <section class="space-y-3">
+                <h3 class="text-lg font-bold text-slate-900">2. Uso Permitido y de Carácter Privado</h3>
+                <p class="text-sm text-slate-650 leading-relaxed">
+                    Este software ha sido diseñado con fines estrictamente <strong>internos, administrativos e informativos</strong> de Pacific Surf School. Está prohibido el uso con propósitos comerciales ajenos a la escuela o la reventa del código, interfaces o bases de datos de alumnos sin consentimiento explícito.
+                </p>
+            </section>
+
+            <section class="space-y-3">
+                <h3 class="text-lg font-bold text-slate-900">3. Responsabilidad sobre la Sincronización Remota</h3>
+                <p class="text-sm text-slate-650 leading-relaxed">
+                    La sincronización de fichas de alumnos con Google Sheets se realiza ejecutando llamadas directas autorizadas a la API de Google proporcionadas de forma nativa por su navegador. Usted acepta que:
+                </p>
+                <ul class="list-disc pl-5 text-sm text-slate-650 space-y-1.5">
+                    <li>Es el único responsable de configurar correctamente el identificador (ID) de su Hoja de Cálculo escolar de forma confidencial.</li>
+                    <li>Pacific Surf School Manager no asume responsabilidad alguna ante cortes temporales del servicio de Google Workspace, pérdidas de archivos remotos accidentales en su Google Drive o inconsistencias de formato provocadas por ediciones directas manuales no controladas.</li>
+                    <li>Las importaciones de modo "restauración completa destructiva" limpian las bases de datos locales reemplazando por lo contenido en Sheets; se debe utilizar esta función previo respaldo.</li>
+                </ul>
+            </section>
+
+            <section class="space-y-3">
+                <h3 class="text-lg font-bold text-slate-900">4. Registro y Seguridad de Cuentas</h3>
+                <p class="text-sm text-slate-650 leading-relaxed">
+                    Cada directivo o coach con acceso al panel debe resguardar adecuadamente sus credenciales. La cuenta inicial Super Admin fue provista exclusivamente para el control inicial y no debe ser divulgada para evitar comprometer deudas de cuotas mensuales de alumnos o saldos recaudados de caja.
+                </p>
+            </section>
+
+            <section class="space-y-3 font-bold text-slate-900 border-t border-slate-100 pt-5 text-sm">
+                5. Limitación de Responsabilidad General
+            </section>
+            <p class="text-sm text-slate-650 leading-relaxed">
+                El software se proporciona en sus condiciones actuales ("as-is" y "as-available") sin garantías adicionales implícitas sobre la disponibilidad absoluta a perpetuidad o infalibilidad técnica, exceptuando la protección normal de cifrado integrada en nubes seguras de Cloud Run.
+            </p>
+
+            <section class="space-y-3 border-t border-slate-100 pt-5">
+                <h3 class="text-lg font-bold text-slate-900">6. Cambios o Modificaciones en los Términos</h3>
+                <p class="text-sm text-slate-650 leading-relaxed">
+                    Pacific Surf School se reserva el derecho de modificar o cambiar estos términos de servicio en cualquier momento para adecuarse a regulaciones tributarias de caja o del plan de privacidad exigido por Google Cloud. Las continuas visitas representarán aceptación conforme de los mismos.
+                </p>
+            </section>
+        </article>
+    </main>
+
+    <footer class="bg-slate-900 border-t border-slate-800 py-8 px-4 text-center text-xs text-slate-455 mt-12">
+        <div class="max-w-4xl mx-auto space-y-2">
+            <p>© 2026 Pacific Surf School S.A.C. Todos los derechos reservados.</p>
+            <p class="text-slate-500">Para consultas o sugerencias respecto al funcionamiento de la licencia de uso interno, comunícate con info@pacificsurfschool.com</p>
+        </div>
+    </footer>
+</body>
+</html>
+    `);
+  });
+
   // Vite middleware
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({

@@ -368,6 +368,34 @@ export default function App() {
                 {view === 'import' && <ImportStudents />}
               </motion.div>
             </AnimatePresence>
+
+            {/* Global Footer compliant with Google OAuth Verification requirements */}
+            <footer className="mt-16 pt-8 border-t border-slate-200/60 pb-4 text-center text-xs text-slate-400 space-y-2 relative z-10">
+              <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 font-medium">
+                <a 
+                  href="/privacy-policy" 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="hover:text-cyan-600 font-semibold transition underline underline-offset-2"
+                >
+                  Política de Privacidad
+                </a>
+                <span className="text-slate-300">•</span>
+                <a 
+                  href="/terms-of-service" 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="hover:text-cyan-600 font-semibold transition underline underline-offset-2"
+                >
+                  Términos de Servicio
+                </a>
+                <span className="text-slate-300">•</span>
+                <span className="text-slate-400 font-medium">Soporte Escolar: info@pacificsurfschool.com</span>
+              </div>
+              <p className="font-sans leading-relaxed text-slate-400 max-w-xl mx-auto">
+                © {new Date().getFullYear()} Pacific Surf School Manager. Este software es una herramienta de administración interna privada exclusiva para Pacific Surf School. La sincronización se realiza de manera segura con Google Sheets.
+              </p>
+            </footer>
           </div>
         </main>
       </div>

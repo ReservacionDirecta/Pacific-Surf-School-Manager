@@ -170,14 +170,15 @@ export default function GoogleSheetsSync() {
     addLog('Iniciando exportación de datos a Google Sheets...');
 
     try {
-      const sheetNames = ['Alumnos', 'Instructores', 'Clases', 'Paquetes de Alumnos'];
+      const sheetNames = ['Alumnos', 'Instructores', 'Clases', 'Paquetes de Alumnos', 'Pagos registrados'];
       await ensureSheetsExist(activeToken, spreadsheetId, sheetNames);
 
-      const [alumnos, instructores, clases, studentPkgs] = await Promise.all([
+      const [alumnos, instructores, clases, studentPkgs, pagos] = await Promise.all([
         getStudents(),
         getInstructors(),
         getClasses(),
-        getStudentPackages()
+        getStudentPackages(),
+        getPayments()
       ]);
 
       // 1. Export Alumnos
@@ -222,6 +223,14 @@ export default function GoogleSheetsSync() {
         ])
       ];
       await writeSheetData(activeToken, spreadsheetId, 'Paquetes de Alumnos!A1:J2000', spValues);
+
+      // 5. Export Pagos
+      addLog(`Exportando ${pagos.length} Pagos registrados...`);
+      const pagosValues = [
+        ['ID', 'Paquete Alumno ID', 'Monto', 'Fecha', 'Metodo', 'Notas'],
+        ...pagos.map(p => [p.id || '', p.studentPackageId, p.amount ?? 0, p.date || '', p.method || '', p.notes || ''])
+      ];
+      await writeSheetData(activeToken, spreadsheetId, 'Pagos registrados!A1:F5000', pagosValues);
 
       addLog('✅ ¡Exportación completada exitosamente en todas las pestañas!');
       alert('Sincronización de exportación finalizada correctamente.');
@@ -583,14 +592,19 @@ export default function GoogleSheetsSync() {
 
         {/* Google Authentication Control */}
         {needsAuth ? (
-          <button
-            onClick={handleLogin}
-            disabled={isLoggingIn}
-            className="flex items-center gap-2 bg-gradient-to-r from-emerald-650 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white font-bold px-4 py-2.5 rounded-xl shadow-md cursor-pointer text-xs transition active:scale-98 disabled:opacity-50"
-          >
-            <LogIn className="w-4 h-4" />
-            Vincular Cuenta Google
-          </button>
+          <div className="flex flex-col items-end gap-1.5">
+            <button
+              onClick={handleLogin}
+              disabled={isLoggingIn}
+              className="flex items-center gap-2 bg-gradient-to-r from-emerald-650 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white font-bold px-4 py-2.5 rounded-xl shadow-md cursor-pointer text-xs transition active:scale-98 disabled:opacity-50"
+            >
+              <LogIn className="w-4 h-4" />
+              Vincular Cuenta Google
+            </button>
+            <p className="text-[10px] text-slate-400 text-right max-w-[200px] leading-snug">
+              Al vincularte aceptas nuestra <a href="/privacy-policy" target="_blank" className="underline font-semibold text-cyan-600 hover:text-cyan-700">Política de Privacidad</a> y los <a href="/terms-of-service" target="_blank" className="underline font-semibold text-cyan-600 hover:text-cyan-700">Términos de Servicio</a>.
+            </p>
+          </div>
         ) : (
           <div className="flex items-center gap-3 bg-emerald-50/70 py-2 px-3 border border-emerald-100 rounded-xl">
             <div className="text-left shrink-0">
@@ -643,6 +657,32 @@ export default function GoogleSheetsSync() {
           </div>
         </motion.div>
       )}
+
+      {/* Google hasn't verified this app Bypass Instructions */}
+      <motion.div 
+        initial={{ opacity: 0, y: -4 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="p-5 bg-cyan-950/40 border border-cyan-800/60 rounded-2xl text-xs text-cyan-200 space-y-3 shadow-xs relative overflow-hidden"
+      >
+        <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/5 rounded-full blur-2xl pointer-events-none"></div>
+        <div className="flex items-center gap-2 font-extrabold text-cyan-300 text-sm relative z-10">
+          <AlertCircle className="w-5 h-5 text-cyan-400 shrink-0" />
+          ¿Cómo solucionar la pantalla "Google hasn't verified this app"? (100% Seguro)
+        </div>
+        <div className="space-y-2 leading-relaxed text-slate-300 relative z-10 font-sans">
+          <p>
+            Al ser este un software de administración <strong>privado e interno</strong> desarrollado exclusivamente para Pacific Surf School, es completamente normal que Google muestre una pantalla de advertencia preventiva (ya que la escuela no requiere someter el software a una verificación pública masiva y costosa ante Google).
+          </p>
+          <p className="font-bold text-cyan-300">
+            Sigue estos sencillos pasos para vincular tu cuenta con total seguridad:
+          </p>
+          <ol className="list-decimal pl-5 space-y-1 mt-1 text-slate-350">
+            <li>En la ventana emergente de Google, haz clic en el enlace gris inferior que dice <strong className="text-white">"Advanced"</strong> (o <strong className="text-white font-semibold">"Configuración avanzada"</strong>).</li>
+            <li>Se desplegará una sección adicional abajo. Haz clic en el enlace que dice <strong className="text-cyan-300 hover:underline">"Go to Pacific Surf School Manager (unsafe)"</strong> (o <strong className="text-cyan-300 hover:underline">"Ir a Pacific Surf School Manager (no seguro)"</strong>).</li>
+            <li>Finalmente, presiona <strong className="text-white">"Continue"</strong> (o <strong className="text-white font-semibold">"Permitir"</strong>) para conceder los permisos de lectura y escritura en tus Hojas de Cálculo.</li>
+          </ol>
+        </div>
+      </motion.div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Sync Settings */}

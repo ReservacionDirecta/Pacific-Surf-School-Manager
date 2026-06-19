@@ -185,6 +185,32 @@ export const syncFromGoogleSheets = async (spreadsheetId: string): Promise<SyncR
           }
         }
       }
+
+      // --- FETCH STANDARD 'Pagos registrados' TAB ---
+      const hasPagosTab = sheetTitles.includes('Pagos registrados');
+      if (hasPagosTab) {
+        const payRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Pagos%20registrados!A1:Z5000`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (payRes.ok) {
+          const payData = await payRes.json();
+          const rows = payData.values || [];
+          if (rows.length > 1) {
+            for (let i = 1; i < rows.length; i++) {
+              const r = rows[i];
+              if (!r[0]) continue;
+              parsedPayments.push({
+                id: r[0],
+                studentPackageId: r[1] || '',
+                amount: r[2] ? Number(r[2]) : 0,
+                date: r[3] || '',
+                method: r[4] || 'Efectivo',
+                notes: r[5] || ''
+              });
+            }
+          }
+        }
+      }
     } else {
       // Case B: Spreadsheet is the RAW student roster list provided directly in user message
       // We read the first sheet in the spreadsheet
@@ -311,4 +337,173 @@ export const syncFromGoogleSheets = async (spreadsheetId: string): Promise<SyncR
     console.error('Error in Google Sheets sync engine:', error);
     return { success: false, message: error.message };
   }
+};
+
+export const exportToGoogleSheets = async (spreadsheetId: string): Promise<SyncResult> => {
+  const token = await getAccessToken();
+  if (!token) {
+    return { success: false, message: 'No se detectó sesión activa de Google o expiró.' };
+  }
+
+  try {
+    const sheetNames = ['Alumnos', 'Instructores', 'Clases', 'Paquetes de Alumnos', 'Pagos registrados'];
+    
+    // 1. Ensure all sheet tabs exist first
+    const metaRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}?fields=sheets.properties.title`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    if (!metaRes.ok) {
+      const errText = await metaRes.text();
+      throw new Error(`No se pudo leer la hoja de cálculo. Asegúrate de tener permisos o re-introduce el ID. Detalles: ${errText}`);
+    }
+
+    const metaData = await metaRes.json();
+    const existingTitles = (metaData.sheets || []).map((s: any) => s.properties.title);
+    const sheetsToCreate = sheetNames.filter(name => !existingTitles.includes(name));
+
+    if (sheetsToCreate.length > 0) {
+      const updateRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}:batchUpdate`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          requests: sheetsToCreate.map(title => ({
+            addSheet: { properties: { title } }
+          }))
+        })
+      });
+      if (!updateRes.ok) {
+        throw new Error('Error al crear las pestañas necesarias en Google Sheets.');
+      }
+    }
+
+    // 2. Fetch all local data using dynamic imports to prevent circular dependencies
+    const { getStudents, getInstructors, getClasses, getStudentPackages, getPayments } = await import('./db');
+    const [alumnos, instructores, clases, studentPkgs, pagos] = await Promise.all([
+      getStudents(),
+      getInstructors(),
+      getClasses(),
+      getStudentPackages(),
+      getPayments()
+    ]);
+
+    // Helper function to write sheet data
+    const writeSheetData = async (range: string, values: any[][]) => {
+      const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(range)}?valueInputOption=USER_ENTERED`, {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ values })
+      });
+      if (!res.ok) {
+        throw new Error(`Error escribiendo en el rango ${range}`);
+      }
+    };
+
+    // 3. Sync each tab cleanly
+    // A. Alumnos
+    const alumnosValues = [
+      ['ID', 'Nombre', 'Email', 'Teléfono', 'Edad', '¿Tiene Tabla?', 'Padres', 'Fecha Nacimiento', 'Inscripción'],
+      ...alumnos.map(a => [
+        a.id, 
+        a.name, 
+        a.email || '', 
+        a.phone || '', 
+        a.age ?? 0, 
+        a.hasBoard || 'No', 
+        a.parentsName || '', 
+        a.birthDate || '', 
+        a.enrollmentDate || ''
+      ])
+    ];
+    await writeSheetData('Alumnos!A1:I2000', alumnosValues);
+
+    // B. Instructores
+    const instructoresValues = [
+      ['ID', 'Nombre', 'Email', 'Teléfono'],
+      ...instructores.map(i => [i.id, i.name, i.email || '', i.phone || ''])
+    ];
+    await writeSheetData('Instructores!A1:D500', instructoresValues);
+
+    // C. Clases
+    const clasesValues = [
+      ['ID', 'Fecha', 'Alumno ID', 'Instructor ID', 'Estado'],
+      ...clases.map(c => [c.id || '', c.date, c.studentId, c.instructorId, c.status])
+    ];
+    await writeSheetData('Clases!A1:E5500', clasesValues);
+
+    // D. Paquetes de Alumnos
+    const spValues = [
+      ['ID', 'Alumno ID', 'Paquete ID', 'Nombre Paquete', 'Monto Pagado', 'Precio Total', 'Clases Usadas', 'Clases Totales', 'Fecha Límite Pago', 'Estado'],
+      ...studentPkgs.map(sp => [
+        sp.id || '', 
+        sp.studentId, 
+        sp.packageId, 
+        sp.packageName || '', 
+        sp.amountPaid ?? 0, 
+        sp.totalPrice ?? 0, 
+        sp.classesUsed ?? 0, 
+        sp.totalClasses ?? 0, 
+        sp.paymentDueDate || '', 
+        sp.status || 'active'
+      ])
+    ];
+    await writeSheetData('Paquetes de Alumnos!A1:J2000', spValues);
+
+    // E. Pagos registrados
+    const pagosValues = [
+      ['ID', 'Paquete Alumno ID', 'Monto', 'Fecha', 'Método', 'Notas'],
+      ...pagos.map(p => [
+        p.id || '',
+        p.studentPackageId,
+        p.amount ?? 0,
+        p.date || '',
+        p.method || 'Efectivo',
+        p.notes || ''
+      ])
+    ];
+    await writeSheetData('Pagos registrados!A1:F5000', pagosValues);
+
+    return {
+      success: true,
+      message: 'Base de datos en Google Sheets actualizada con éxito en tiempo real.',
+      count: {
+        students: alumnos.length,
+        packages: studentPkgs.length,
+        classes: clases.length,
+        instructors: instructores.length,
+        payments: pagos.length
+      }
+    };
+  } catch (err: any) {
+    console.error('Error in exportToGoogleSheets:', err);
+    return { success: false, message: err.message };
+  }
+};
+
+let autoSyncTimeout: any = null;
+
+export const autoSyncToSheets = async () => {
+  if (typeof window === 'undefined') return;
+  const hId = localStorage.getItem('spreadsheet_id');
+  if (!hId) return;
+
+  const token = await getAccessToken();
+  if (!token) return; // Silent skip if Google session is unauthorized or not signed in yet.
+
+  if (autoSyncTimeout) clearTimeout(autoSyncTimeout);
+  
+  autoSyncTimeout = setTimeout(async () => {
+    try {
+      console.log('🔄 Ejecutando autoguardado en tiempo real en Google Sheets...');
+      await exportToGoogleSheets(hId);
+    } catch (err) {
+      console.error('❌ Error en autoguardado de Google Sheets:', err);
+    }
+  }, 1200); // 1.2s debounce
 };

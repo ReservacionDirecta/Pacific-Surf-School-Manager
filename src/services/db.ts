@@ -108,6 +108,15 @@ const setLS = <T>(key: string, data: T[]) => {
   localStorage.setItem(key, JSON.stringify(data));
 };
 
+// --- Post mutation real-time Google Sheets backup trigger ---
+const triggerPostMutation = () => {
+  if (typeof window !== 'undefined') {
+    import('./sheetsSync')
+      .then(m => m.autoSyncToSheets())
+      .catch(err => console.error('AutoSync trigger error:', err));
+  }
+};
+
 // --- Students ---
 export const getStudents = async (): Promise<Student[]> => {
   if (isLocalStorageMode()) {
@@ -118,19 +127,23 @@ export const getStudents = async (): Promise<Student[]> => {
 };
 
 export const addStudent = async (student: Omit<Student, 'id'>): Promise<Student> => {
+  let result: Student;
   if (isLocalStorageMode()) {
     const students = getLS<Student>(LS_KEYS.students);
     const newStudent = { ...student, id: 'student-' + Math.random().toString(36).substr(2, 9) };
     students.push(newStudent);
     setLS(LS_KEYS.students, students);
-    return newStudent;
+    result = newStudent;
+  } else {
+    const res = await fetch('/api/students', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(student)
+    });
+    result = await res.json();
   }
-  const res = await fetch('/api/students', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(student)
-  });
-  return res.json();
+  triggerPostMutation();
+  return result;
 };
 
 export const updateStudent = async (id: string, data: Partial<Student>): Promise<void> => {
@@ -141,22 +154,24 @@ export const updateStudent = async (id: string, data: Partial<Student>): Promise
       students[index] = { ...students[index], ...data };
       setLS(LS_KEYS.students, students);
     }
-    return;
+  } else {
+    await fetch(`/api/students/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
   }
-  await fetch(`/api/students/${id}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data)
-  });
+  triggerPostMutation();
 };
 
 export const deleteStudent = async (id: string): Promise<void> => {
   if (isLocalStorageMode()) {
     const students = getLS<Student>(LS_KEYS.students);
     setLS(LS_KEYS.students, students.filter(s => s.id !== id));
-    return;
+  } else {
+    await fetch(`/api/students/${id}`, { method: 'DELETE' });
   }
-  await fetch(`/api/students/${id}`, { method: 'DELETE' });
+  triggerPostMutation();
 };
 
 // --- Instructors ---
@@ -169,48 +184,55 @@ export const getInstructors = async (): Promise<Instructor[]> => {
 };
 
 export const addInstructor = async (instructor: Omit<Instructor, 'id'>): Promise<Instructor> => {
+  let result: Instructor;
   if (isLocalStorageMode()) {
     const instructors = getLS<Instructor>(LS_KEYS.instructors);
     const newInstructor = { ...instructor, id: 'instructor-' + Math.random().toString(36).substr(2, 9) };
     instructors.push(newInstructor);
     setLS(LS_KEYS.instructors, instructors);
-    return newInstructor;
+    result = newInstructor;
+  } else {
+    const res = await fetch('/api/instructors', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(instructor)
+    });
+    result = await res.json();
   }
-  const res = await fetch('/api/instructors', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(instructor)
-  });
-  return res.json();
+  triggerPostMutation();
+  return result;
 };
 
 export const updateInstructor = async (id: string, data: Partial<Instructor>): Promise<Instructor> => {
+  let result = {} as Instructor;
   if (isLocalStorageMode()) {
     const instructors = getLS<Instructor>(LS_KEYS.instructors);
     const index = instructors.findIndex(i => i.id === id);
-    let updated = {} as Instructor;
     if (index !== -1) {
       instructors[index] = { ...instructors[index], ...data };
-      updated = instructors[index];
+      result = instructors[index];
       setLS(LS_KEYS.instructors, instructors);
     }
-    return updated;
+  } else {
+    const res = await fetch(`/api/instructors/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    result = await res.json();
   }
-  const res = await fetch(`/api/instructors/${id}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data)
-  });
-  return res.json();
+  triggerPostMutation();
+  return result;
 };
 
 export const deleteInstructor = async (id: string): Promise<void> => {
   if (isLocalStorageMode()) {
     const instructors = getLS<Instructor>(LS_KEYS.instructors);
     setLS(LS_KEYS.instructors, instructors.filter(i => i.id !== id));
-    return;
+  } else {
+    await fetch(`/api/instructors/${id}`, { method: 'DELETE' });
   }
-  await fetch(`/api/instructors/${id}`, { method: 'DELETE' });
+  triggerPostMutation();
 };
 
 // --- Packages ---
@@ -223,19 +245,23 @@ export const getPackages = async (): Promise<Package[]> => {
 };
 
 export const addPackage = async (pkg: Omit<Package, 'id'>): Promise<Package> => {
+  let result: Package;
   if (isLocalStorageMode()) {
     const packages = getLS<Package>(LS_KEYS.packages);
     const newPackage = { ...pkg, id: 'pkg-' + Math.random().toString(36).substr(2, 9) };
     packages.push(newPackage);
     setLS(LS_KEYS.packages, packages);
-    return newPackage;
+    result = newPackage;
+  } else {
+    const res = await fetch('/api/packages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(pkg)
+    });
+    result = await res.json();
   }
-  const res = await fetch('/api/packages', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(pkg)
-  });
-  return res.json();
+  triggerPostMutation();
+  return result;
 };
 
 export const updatePackage = async (id: string, data: Partial<Package>): Promise<void> => {
@@ -246,22 +272,24 @@ export const updatePackage = async (id: string, data: Partial<Package>): Promise
       packages[index] = { ...packages[index], ...data };
       setLS(LS_KEYS.packages, packages);
     }
-    return;
+  } else {
+    await fetch(`/api/packages/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
   }
-  await fetch(`/api/packages/${id}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data)
-  });
+  triggerPostMutation();
 };
 
 export const deletePackage = async (id: string): Promise<void> => {
   if (isLocalStorageMode()) {
     const packages = getLS<Package>(LS_KEYS.packages);
     setLS(LS_KEYS.packages, packages.filter(p => p.id !== id));
-    return;
+  } else {
+    await fetch(`/api/packages/${id}`, { method: 'DELETE' });
   }
-  await fetch(`/api/packages/${id}`, { method: 'DELETE' });
+  triggerPostMutation();
 };
 
 // --- Student Packages ---
@@ -274,19 +302,23 @@ export const getStudentPackages = async (): Promise<StudentPackage[]> => {
 };
 
 export const addStudentPackage = async (sp: Omit<StudentPackage, 'id'>): Promise<StudentPackage> => {
+  let result: StudentPackage;
   if (isLocalStorageMode()) {
     const spList = getLS<StudentPackage>(LS_KEYS.studentPackages);
     const newSp = { ...sp, id: 'sp-' + Math.random().toString(36).substr(2, 9) };
     spList.push(newSp);
     setLS(LS_KEYS.studentPackages, spList);
-    return newSp;
+    result = newSp;
+  } else {
+    const res = await fetch('/api/student-packages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(sp)
+    });
+    result = await res.json();
   }
-  const res = await fetch('/api/student-packages', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(sp)
-  });
-  return res.json();
+  triggerPostMutation();
+  return result;
 };
 
 export const updateStudentPackage = async (id: string, data: Partial<StudentPackage>): Promise<void> => {
@@ -297,22 +329,24 @@ export const updateStudentPackage = async (id: string, data: Partial<StudentPack
       spList[index] = { ...spList[index], ...data };
       setLS(LS_KEYS.studentPackages, spList);
     }
-    return;
+  } else {
+    await fetch(`/api/student-packages/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
   }
-  await fetch(`/api/student-packages/${id}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data)
-  });
+  triggerPostMutation();
 };
 
 export const deleteStudentPackage = async (id: string): Promise<void> => {
   if (isLocalStorageMode()) {
     const spList = getLS<StudentPackage>(LS_KEYS.studentPackages);
     setLS(LS_KEYS.studentPackages, spList.filter(sp => sp.id !== id));
-    return;
+  } else {
+    await fetch(`/api/student-packages/${id}`, { method: 'DELETE' });
   }
-  await fetch(`/api/student-packages/${id}`, { method: 'DELETE' });
+  triggerPostMutation();
 };
 
 // --- Classes ---
@@ -325,19 +359,23 @@ export const getClasses = async (): Promise<Class[]> => {
 };
 
 export const addClass = async (cls: Omit<Class, 'id'>): Promise<Class> => {
+  let result: Class;
   if (isLocalStorageMode()) {
     const classes = getLS<Class>(LS_KEYS.classes);
     const newClass = { ...cls, id: 'cls-' + Math.random().toString(36).substr(2, 9) };
     classes.push(newClass);
     setLS(LS_KEYS.classes, classes);
-    return newClass;
+    result = newClass;
+  } else {
+    const res = await fetch('/api/classes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(cls)
+    });
+    result = await res.json();
   }
-  const res = await fetch('/api/classes', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(cls)
-  });
-  return res.json();
+  triggerPostMutation();
+  return result;
 };
 
 export const updateClass = async (id: string, data: Partial<Class>): Promise<void> => {
@@ -348,22 +386,24 @@ export const updateClass = async (id: string, data: Partial<Class>): Promise<voi
       classes[index] = { ...classes[index], ...data };
       setLS(LS_KEYS.classes, classes);
     }
-    return;
+  } else {
+    await fetch(`/api/classes/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
   }
-  await fetch(`/api/classes/${id}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data)
-  });
+  triggerPostMutation();
 };
 
 export const deleteClass = async (id: string): Promise<void> => {
   if (isLocalStorageMode()) {
     const classes = getLS<Class>(LS_KEYS.classes);
     setLS(LS_KEYS.classes, classes.filter(c => c.id !== id));
-    return;
+  } else {
+    await fetch(`/api/classes/${id}`, { method: 'DELETE' });
   }
-  await fetch(`/api/classes/${id}`, { method: 'DELETE' });
+  triggerPostMutation();
 };
 
 // --- Payments ---
@@ -376,26 +416,31 @@ export const getPayments = async (): Promise<Payment[]> => {
 };
 
 export const addPayment = async (payment: Omit<Payment, 'id'>): Promise<Payment> => {
+  let result: Payment;
   if (isLocalStorageMode()) {
     const payments = getLS<Payment>(LS_KEYS.payments);
     const newPayment = { ...payment, id: 'pay-' + Math.random().toString(36).substr(2, 9) };
     payments.push(newPayment);
     setLS(LS_KEYS.payments, payments);
-    return newPayment;
+    result = newPayment;
+  } else {
+    const res = await fetch('/api/payments', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payment)
+    });
+    result = await res.json();
   }
-  const res = await fetch('/api/payments', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payment)
-  });
-  return res.json();
+  triggerPostMutation();
+  return result;
 };
 
 export const deletePayment = async (id: string): Promise<void> => {
   if (isLocalStorageMode()) {
     const payments = getLS<Payment>(LS_KEYS.payments);
     setLS(LS_KEYS.payments, payments.filter(p => p.id !== id));
-    return;
+  } else {
+    await fetch(`/api/payments/${id}`, { method: 'DELETE' });
   }
-  await fetch(`/api/payments/${id}`, { method: 'DELETE' });
+  triggerPostMutation();
 };
