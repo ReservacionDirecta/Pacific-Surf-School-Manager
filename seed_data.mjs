@@ -162,13 +162,28 @@ async function main() {
     }
   }
 
+  const equipment = [
+    { id: 'eq_tabla_1', type: 'Tabla', size: "6'0\"", brand: 'Torq', condition: 'Bueno', status: 'Disponible', notes: 'Tabla de inicio', assignedToType: '', assignedToId: '', assignedToName: '' },
+    { id: 'eq_tabla_2', type: 'Tabla', size: "6'4\"", brand: 'NSP', condition: 'Nuevo', status: 'Disponible', notes: '', assignedToType: '', assignedToId: '', assignedToName: '' },
+    { id: 'eq_tabla_3', type: 'Tabla', size: "5'8\"", brand: 'Firewire', condition: 'Bueno', status: 'Disponible', notes: '', assignedToType: '', assignedToId: '', assignedToName: '' },
+    { id: 'eq_tabla_4', type: 'Tabla', size: "6'2\"", brand: 'Torq', condition: 'Regular', status: 'En mantenimiento', notes: 'Parche en el bottom', assignedToType: '', assignedToId: '', assignedToName: '' },
+    { id: 'eq_tabla_5', type: 'Tabla', size: "7'0\"", brand: 'Bic Sport', condition: 'Bueno', status: 'Disponible', notes: 'Tabla de aprendizaje', assignedToType: '', assignedToId: '', assignedToName: '' },
+    { id: 'eq_ws_1', type: 'Wetsuit', size: 'M', brand: 'Rip Curl', condition: 'Bueno', status: 'Disponible', notes: '3/2mm', assignedToType: '', assignedToId: '', assignedToName: '' },
+    { id: 'eq_ws_2', type: 'Wetsuit', size: 'L', brand: "O'Neill", condition: 'Nuevo', status: 'Disponible', notes: '4/3mm', assignedToType: '', assignedToId: '', assignedToName: '' },
+    { id: 'eq_ws_3', type: 'Wetsuit', size: 'S', brand: 'Quiksilver', condition: 'Bueno', status: 'En uso', assignedToType: 'instructor', assignedToId: 'inst_1', assignedToName: 'Diego Torres' },
+    { id: 'eq_lycra_1', type: 'Lycra', size: 'M', brand: 'Rip Curl', condition: 'Nuevo', status: 'Disponible', notes: '', assignedToType: '', assignedToId: '', assignedToName: '' },
+    { id: 'eq_lycra_2', type: 'Lycra', size: 'L', brand: 'Rip Curl', condition: 'Bueno', status: 'Disponible', notes: '', assignedToType: '', assignedToId: '', assignedToName: '' },
+    { id: 'eq_lycra_3', type: 'Lycra', size: 'S', brand: 'Billabong', condition: 'Bueno', status: 'En uso', assignedToType: 'instructor', assignedToId: 'inst_2', assignedToName: 'Jose Fernandez' },
+  ];
+
   const payload = {
     students,
     instructors: INSTRUCTORS,
     packages: DEFAULT_PACKAGES,
     studentPackages,
     classes,
-    payments
+    payments,
+    equipment
   };
 
   console.log(`📦 Payload: ${students.length} alumnos, ${studentPackages.length} paquetes, ${classes.length} clases, ${payments.length} pagos`);

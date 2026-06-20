@@ -20,7 +20,8 @@ import {
   Lock,
   Mail,
   User as UserIcon,
-  ArrowLeft
+  ArrowLeft,
+  ClipboardList
 } from 'lucide-react';
 
 import Dashboard from './components/Dashboard';
@@ -31,6 +32,7 @@ import Classes from './components/Classes';
 import Payments from './components/Payments';
 import ImportStudents from './components/ImportStudents';
 import GoogleSheetsSync from './components/GoogleSheetsSync';
+import EquipmentManager from './components/Equipment';
 
 export default function App() {
   const [view, setView] = useState('dashboard');
@@ -104,6 +106,7 @@ export default function App() {
     { id: 'payments', name: 'Cobranza', icon: Wallet },
     { id: 'sheets', name: 'Sincronizar', icon: RefreshCw },
     { id: 'import', name: 'Importar', icon: Upload },
+    { id: 'equipment', name: 'Equipamiento', icon: ClipboardList },
   ];
 
   if (loading) {
@@ -368,6 +371,7 @@ export default function App() {
                 {view === 'payments' && <Payments onNavigate={navigateTo} />}
                 {view === 'sheets' && <GoogleSheetsSync />}
                 {view === 'import' && <ImportStudents />}
+                {view === 'equipment' && <EquipmentManager />}
               </motion.div>
             </AnimatePresence>
 

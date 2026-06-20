@@ -46,10 +46,28 @@ export interface Payment {
   notes?: string;
 }
 
+export interface Equipment {
+  id?: string;
+  type: 'Tabla' | 'Wetsuit' | 'Lycra';
+  size: string;
+  brand?: string;
+  condition: 'Nuevo' | 'Bueno' | 'Regular' | 'Mal estado';
+  status: 'Disponible' | 'En uso' | 'En mantenimiento' | 'Perdido';
+  notes?: string;
+  assignedToType?: 'student' | 'instructor' | '';
+  assignedToId?: string;
+  assignedToName?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface Class {
   id?: string;
   date: string; // ISO string
   studentId: string;
   instructorId: string;
   status: 'scheduled' | 'completed' | 'cancelled';
+  boardId?: string;
+  wetsuitId?: string;
+  lycraId?: string;
 }

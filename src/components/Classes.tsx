@@ -19,8 +19,8 @@ import {
   ArrowUp,
   ArrowDown
 } from 'lucide-react';
-import { Class, Student, Instructor, StudentPackage } from '../types';
-import { addClass, updateClass, deleteClass, updateStudentPackage, getClasses, getStudents, getInstructors, getStudentPackages } from '../services/db';
+import { Class, Student, Instructor, StudentPackage, Equipment } from '../types';
+import { addClass, updateClass, deleteClass, updateStudentPackage, getClasses, getStudents, getInstructors, getStudentPackages, getEquipment } from '../services/db';
 import { format, parseISO, isToday, isTomorrow, isAfter, startOfDay } from 'date-fns';
 import { getAccessToken, initAuth } from '../services/googleAuth';
 
@@ -37,6 +37,7 @@ export default function Classes({ onNavigate }: { onNavigate?: (view: string) =>
   const [students, setStudents] = useState<Record<string, Student>>({});
   const [instructors, setInstructors] = useState<Record<string, Instructor>>({});
   const [studentPackages, setStudentPackages] = useState<StudentPackage[]>([]);
+  const [equipment, setEquipment] = useState<Equipment[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
   
   // Tab selector between local Classes and Live Sheet History
@@ -60,6 +61,9 @@ export default function Classes({ onNavigate }: { onNavigate?: (view: string) =>
   const [date, setDate] = useState('');
   const [studentId, setStudentId] = useState('');
   const [instructorId, setInstructorId] = useState('');
+  const [formBoardId, setFormBoardId] = useState('');
+  const [formWetsuitId, setFormWetsuitId] = useState('');
+  const [formLycraId, setFormLycraId] = useState('');
   const [selectedStudentPackage, setSelectedStudentPackage] = useState<StudentPackage | null>(null);
 
   // Filter state
@@ -72,15 +76,17 @@ export default function Classes({ onNavigate }: { onNavigate?: (view: string) =>
 
   const fetchData = async () => {
     try {
-      const [cData, sData, iData, spData] = await Promise.all([
+      const [cData, sData, iData, spData, eqData] = await Promise.all([
         getClasses(),
         getStudents(),
         getInstructors(),
-        getStudentPackages()
+        getStudentPackages(),
+        getEquipment()
       ]);
       
       setClasses(cData.sort((a: Class, b: Class) => new Date(a.date).getTime() - new Date(b.date).getTime()));
       setStudentPackages(spData);
+      setEquipment(eqData.filter((e: Equipment) => e.status === 'Disponible' || e.status === 'En uso'));
       
       const studs: Record<string, Student> = {};
       sData.forEach((s: Student) => { studs[s.id] = s; });
@@ -192,13 +198,19 @@ export default function Classes({ onNavigate }: { onNavigate?: (view: string) =>
         date: new Date(date).toISOString(),
         studentId,
         instructorId,
-        status: 'scheduled'
+        status: 'scheduled',
+        boardId: formBoardId || undefined,
+        wetsuitId: formWetsuitId || undefined,
+        lycraId: formLycraId || undefined
       });
       await fetchData();
       setShowAddModal(false);
       setDate('');
       setStudentId('');
       setInstructorId('');
+      setFormBoardId('');
+      setFormWetsuitId('');
+      setFormLycraId('');
     } catch (error) {
       console.error("Error adding class:", error);
       alert("Error al agendar clase");
@@ -747,6 +759,47 @@ export default function Classes({ onNavigate }: { onNavigate?: (view: string) =>
                 </select>
               </div>
               
+              {equipment.length > 0 && (
+                <div className="border-t border-slate-100 pt-4 space-y-3">
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Equipo Opcional</p>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Tabla</label>
+                      <select value={formBoardId} onChange={e => setFormBoardId(e.target.value)}
+                        className="block w-full rounded-lg border border-slate-200 text-slate-800 bg-white px-2.5 py-2 text-xs focus:border-cyan-500 outline-none transition"
+                      >
+                        <option value="">Sin asignar</option>
+                        {equipment.filter(e => e.type === 'Tabla').map(e => (
+                          <option key={e.id} value={e.id}>{e.size} {e.brand ? `(${e.brand})` : ''}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Wetsuit</label>
+                      <select value={formWetsuitId} onChange={e => setFormWetsuitId(e.target.value)}
+                        className="block w-full rounded-lg border border-slate-200 text-slate-800 bg-white px-2.5 py-2 text-xs focus:border-cyan-500 outline-none transition"
+                      >
+                        <option value="">Sin asignar</option>
+                        {equipment.filter(e => e.type === 'Wetsuit').map(e => (
+                          <option key={e.id} value={e.id}>{e.size} {e.brand ? `(${e.brand})` : ''}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Lycra</label>
+                      <select value={formLycraId} onChange={e => setFormLycraId(e.target.value)}
+                        className="block w-full rounded-lg border border-slate-200 text-slate-800 bg-white px-2.5 py-2 text-xs focus:border-cyan-500 outline-none transition"
+                      >
+                        <option value="">Sin asignar</option>
+                        {equipment.filter(e => e.type === 'Lycra').map(e => (
+                          <option key={e.id} value={e.id}>{e.size} {e.brand ? `(${e.brand})` : ''}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 pt-4 border-t border-slate-100">
                 <button 
                   type="button" 

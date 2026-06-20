@@ -1,5 +1,5 @@
 import { getAccessToken } from './googleAuth';
-import { Student, Instructor, Package, StudentPackage, Class, Payment } from '../types';
+import { Student, Instructor, Package, StudentPackage, Class, Payment, Equipment } from '../types';
 
 export interface SyncResult {
   success: boolean;
@@ -58,6 +58,7 @@ export const syncFromGoogleSheets = async (spreadsheetId: string): Promise<SyncR
     let parsedInstructors: Instructor[] = [];
     let parsedClasses: Class[] = [];
     let parsedPayments: Payment[] = [];
+    let parsedEquipment: Equipment[] = [];
 
     // Let's check which sheets are present.
     // Case A: The spreadsheet has our structured multi-tab format ('Alumnos', 'Instructores', etc.)
@@ -147,6 +148,47 @@ export const syncFromGoogleSheets = async (spreadsheetId: string): Promise<SyncR
                 studentId: r[2] || '',
                 instructorId: r[3] || '',
                 status: r[4] as any || 'scheduled'
+              });
+            }
+          }
+        }
+      }
+
+      // --- FETCH STANDARD 'Equipamiento' TAB ---
+      if (sheetTitles.includes('Equipamiento')) {
+        const eqRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Equipamiento!A1:Z1000`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (eqRes.ok) {
+          const eqData = await eqRes.json();
+          const rows = eqData.values || [];
+          if (rows.length > 1) {
+            const headers = rows[0].map((h: string) => h.trim().toLowerCase());
+            const idxId = headers.indexOf('id');
+            const idxType = headers.indexOf('tipo');
+            const idxSize = headers.indexOf('talla');
+            const idxBrand = headers.indexOf('marca');
+            const idxCondition = headers.indexOf('condición') !== -1 ? headers.indexOf('condición') : headers.indexOf('condicion');
+            const idxStatus = headers.indexOf('estado');
+            const idxNotes = headers.indexOf('notas');
+            const idxAssType = headers.indexOf('asignado a tipo');
+            const idxAssId = headers.indexOf('asignado a id');
+            const idxAssName = headers.indexOf('asignado a nombre');
+
+            for (let i = 1; i < rows.length; i++) {
+              const r = rows[i];
+              if (!r[idxType]) continue;
+              parsedEquipment.push({
+                id: idxId !== -1 && r[idxId] ? r[idxId] : 'equip_' + Math.random().toString(36).substr(2, 9),
+                type: (r[idxType] || '').trim() as Equipment['type'],
+                size: r[idxSize] || '',
+                brand: idxBrand !== -1 ? r[idxBrand] || '' : '',
+                condition: (r[idxCondition] || 'Bueno').trim() as Equipment['condition'],
+                status: (r[idxStatus] || 'Disponible').trim() as Equipment['status'],
+                notes: idxNotes !== -1 ? r[idxNotes] || '' : '',
+                assignedToType: idxAssType !== -1 ? (r[idxAssType] || '') as Equipment['assignedToType'] : '',
+                assignedToId: idxAssId !== -1 ? r[idxAssId] || '' : '',
+                assignedToName: idxAssName !== -1 ? r[idxAssName] || '' : ''
               });
             }
           }
@@ -328,7 +370,8 @@ export const syncFromGoogleSheets = async (spreadsheetId: string): Promise<SyncR
       packages: DEFAULT_PACKAGES,
       studentPackages: parsedStudentPackages,
       classes: parsedClasses,
-      payments: parsedPayments
+      payments: parsedPayments,
+      equipment: parsedEquipment
     };
 
     const overwriteRes = await fetch('/api/sync/overwrite', {
@@ -367,7 +410,7 @@ export const exportToGoogleSheets = async (spreadsheetId: string): Promise<SyncR
   }
 
   try {
-    const sheetNames = ['Alumnos', 'Instructores', 'Clases', 'Paquetes de Alumnos', 'Pagos registrados'];
+    const sheetNames = ['Alumnos', 'Instructores', 'Clases', 'Paquetes de Alumnos', 'Pagos registrados', 'Equipamiento'];
     
     // 1. Ensure all sheet tabs exist first
     const metaRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}?fields=sheets.properties.title`, {
@@ -402,13 +445,14 @@ export const exportToGoogleSheets = async (spreadsheetId: string): Promise<SyncR
     }
 
     // 2. Fetch all local data using dynamic imports to prevent circular dependencies
-    const { getStudents, getInstructors, getClasses, getStudentPackages, getPayments } = await import('./db');
-    const [alumnos, instructores, clases, studentPkgs, pagos] = await Promise.all([
+    const { getStudents, getInstructors, getClasses, getStudentPackages, getPayments, getEquipment } = await import('./db');
+    const [alumnos, instructores, clases, studentPkgs, pagos, equipamiento] = await Promise.all([
       getStudents(),
       getInstructors(),
       getClasses(),
       getStudentPackages(),
-      getPayments()
+      getPayments(),
+      getEquipment()
     ]);
 
     // Helper function to write sheet data
@@ -503,6 +547,24 @@ export const exportToGoogleSheets = async (spreadsheetId: string): Promise<SyncR
       ])
     ];
     await writeSheetData('Pagos registrados!A1:F5000', pagosValues);
+
+    // F. Equipamiento
+    const equipValues = [
+      ['ID', 'Tipo', 'Talla', 'Marca', 'Condición', 'Estado', 'Notas', 'Asignado A Tipo', 'Asignado A ID', 'Asignado A Nombre'],
+      ...equipamiento.map(e => [
+        e.id || '',
+        e.type,
+        e.size,
+        e.brand || '',
+        e.condition,
+        e.status,
+        e.notes || '',
+        e.assignedToType || '',
+        e.assignedToId || '',
+        e.assignedToName || ''
+      ])
+    ];
+    await writeSheetData('Equipamiento!A1:J2000', equipValues);
 
     return {
       success: true,

@@ -31,7 +31,13 @@ const camelKeys: Record<string, string> = {
   classesused: 'classesUsed',
   paymentduedate: 'paymentDueDate',
   instructorid: 'instructorId',
-  studentpackageid: 'studentPackageId'
+  studentpackageid: 'studentPackageId',
+  assignedtotype: 'assignedToType',
+  assignedtoid: 'assignedToId',
+  assignedtoname: 'assignedToName',
+  boardid: 'boardId',
+  wetsuitid: 'wetsuitId',
+  lycraid: 'lycraId'
 };
 
 function normalizeRow(row: any) {
@@ -49,7 +55,9 @@ function quoteKeyIfNeeded(key: string) {
   const camelcaseList = [
     'hasboard', 'parentsname', 'birthdate', 'enrollmentdate', 'totalclasses', 
     'studentid', 'packageid', 'packagename', 'amountpaid', 'totalprice', 
-    'classesused', 'paymentduedate', 'instructorid', 'studentpackageid'
+    'classesused', 'paymentduedate', 'instructorid', 'studentpackageid',
+    'assignedtotype', 'assignedtoid', 'assignedtoname',
+    'boardid', 'wetsuitid', 'lycraid'
   ];
   if (key !== lower || camelcaseList.includes(lower)) {
     return `"${key}"`;
@@ -221,8 +229,26 @@ class DatabaseService {
       ALTER TABLE student_packages ADD COLUMN IF NOT EXISTS "totalClasses" INTEGER;
       ALTER TABLE student_packages ADD COLUMN IF NOT EXISTS "paymentDueDate" TEXT;
 
+      CREATE TABLE IF NOT EXISTS equipment (
+        id TEXT PRIMARY KEY,
+        type TEXT,
+        size TEXT,
+        brand TEXT,
+        condition TEXT,
+        status TEXT,
+        notes TEXT,
+        "assignedToType" TEXT,
+        "assignedToId" TEXT,
+        "assignedToName" TEXT,
+        created_at TEXT,
+        updated_at TEXT
+      );
+
       ALTER TABLE classes ADD COLUMN IF NOT EXISTS "studentId" TEXT;
       ALTER TABLE classes ADD COLUMN IF NOT EXISTS "instructorId" TEXT;
+      ALTER TABLE classes ADD COLUMN IF NOT EXISTS "boardId" TEXT;
+      ALTER TABLE classes ADD COLUMN IF NOT EXISTS "wetsuitId" TEXT;
+      ALTER TABLE classes ADD COLUMN IF NOT EXISTS "lycraId" TEXT;
 
       ALTER TABLE payments ADD COLUMN IF NOT EXISTS "studentPackageId" TEXT;
     `);
@@ -394,7 +420,10 @@ async function startServer() {
         date TEXT,
         studentId TEXT,
         instructorId TEXT,
-        status TEXT
+        status TEXT,
+        boardId TEXT,
+        wetsuitId TEXT,
+        lycraId TEXT
       );
 
       CREATE TABLE IF NOT EXISTS payments (
@@ -404,6 +433,21 @@ async function startServer() {
         date TEXT,
         method TEXT,
         notes TEXT
+      );
+
+      CREATE TABLE IF NOT EXISTS equipment (
+        id TEXT PRIMARY KEY,
+        type TEXT,
+        size TEXT,
+        brand TEXT,
+        condition TEXT,
+        status TEXT,
+        notes TEXT,
+        assignedToType TEXT,
+        assignedToId TEXT,
+        assignedToName TEXT,
+        created_at TEXT,
+        updated_at TEXT
       );
     `);
   }
@@ -625,9 +669,41 @@ async function startServer() {
     res.json({ success: true });
   });
 
+  // Equipment
+  app.get('/api/equipment', async (req, res) => {
+    const items = await db.prepare('SELECT * FROM equipment').all();
+    res.json(items);
+  });
+
+  app.post('/api/equipment', async (req, res) => {
+    const e = req.body;
+    const id = e.id || Math.random().toString(36).substr(2, 9);
+    const now = new Date().toISOString();
+    await db.prepare(
+      'INSERT INTO equipment (id, type, size, brand, condition, status, notes, "assignedToType", "assignedToId", "assignedToName", created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+    ).run(id, e.type, e.size, e.brand || '', e.condition, e.status, e.notes || '', e.assignedToType || '', e.assignedToId || '', e.assignedToName || '', now, now);
+    res.json({ id, ...e });
+  });
+
+  app.put('/api/equipment/:id', async (req, res) => {
+    const { id } = req.params;
+    const e = req.body;
+    const keys = Object.keys(e);
+    const values = Object.values(e);
+    const setClause = keys.map(k => `${quoteKeyIfNeeded(k)} = ?`).join(', ');
+    const now = new Date().toISOString();
+    await db.prepare(`UPDATE equipment SET ${setClause}, updated_at = ? WHERE id = ?`).run([...values, now, id]);
+    res.json({ id, ...e });
+  });
+
+  app.delete('/api/equipment/:id', async (req, res) => {
+    await db.prepare('DELETE FROM equipment WHERE id = ?').run(req.params.id);
+    res.json({ success: true });
+  });
+
   // Overwrite Sync Database state at once
   app.post('/api/sync/overwrite', async (req, res) => {
-    let { students = [], instructors = [], packages = [], studentPackages = [], classes = [], payments = [] } = req.body;
+    let { students = [], instructors = [], packages = [], studentPackages = [], classes = [], payments = [], equipment = [] } = req.body;
     
     // Deduplicate students by normalized name: keep first occurrence (seed data has richer fields)
     if (students.length > 0) {
@@ -662,6 +738,7 @@ async function startServer() {
           await client.query('DELETE FROM student_packages');
           await client.query('DELETE FROM classes');
           await client.query('DELETE FROM payments');
+          await client.query('DELETE FROM equipment');
 
           for (const s of students) {
             await client.query('INSERT INTO students (id, name, email, phone, age, "hasBoard", "parentsName", "birthDate", "enrollmentDate") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)', [s.id, s.name, s.email || '', s.phone || '', s.age ?? 0, s.hasBoard || 'No', s.parentsName || '', s.birthDate || '', s.enrollmentDate || '']);
@@ -681,6 +758,9 @@ async function startServer() {
           for (const p of payments) {
             await client.query('INSERT INTO payments (id, "studentPackageId", amount, date, method, notes) VALUES ($1, $2, $3, $4, $5, $6)', [p.id, p.studentPackageId, p.amount ?? 0, p.date || '', p.method || 'Efectivo', p.notes || '']);
           }
+          for (const e of equipment) {
+            await client.query('INSERT INTO equipment (id, type, size, brand, condition, status, notes, "assignedToType", "assignedToId", "assignedToName", created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)', [e.id, e.type, e.size, e.brand || '', e.condition, e.status, e.notes || '', e.assignedToType || '', e.assignedToId || '', e.assignedToName || '', e.created_at || new Date().toISOString(), e.updated_at || new Date().toISOString()]);
+          }
           await client.query('COMMIT');
         } catch (txErr) {
           await client.query('ROLLBACK');
@@ -696,6 +776,7 @@ async function startServer() {
           db.sqliteDb.prepare('DELETE FROM student_packages').run();
           db.sqliteDb.prepare('DELETE FROM classes').run();
           db.sqliteDb.prepare('DELETE FROM payments').run();
+          db.sqliteDb.prepare('DELETE FROM equipment').run();
 
           const insertStudent = db.sqliteDb.prepare('INSERT INTO students (id, name, email, phone, age, "hasBoard", "parentsName", "birthDate", "enrollmentDate") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
           for (const s of students) {
@@ -725,6 +806,12 @@ async function startServer() {
           const insertPayment = db.sqliteDb.prepare('INSERT INTO payments (id, "studentPackageId", amount, date, method, notes) VALUES (?, ?, ?, ?, ?, ?)');
           for (const p of payments) {
             insertPayment.run(p.id, p.studentPackageId, p.amount ?? 0, p.date || '', p.method || 'Efectivo', p.notes || '');
+          }
+
+          const insertEquipment = db.sqliteDb.prepare('INSERT INTO equipment (id, type, size, brand, condition, status, notes, "assignedToType", "assignedToId", "assignedToName", created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+          const now = new Date().toISOString();
+          for (const e of equipment) {
+            insertEquipment.run(e.id, e.type, e.size, e.brand || '', e.condition, e.status, e.notes || '', e.assignedToType || '', e.assignedToId || '', e.assignedToName || '', e.created_at || now, e.updated_at || now);
           }
         });
         runTx();

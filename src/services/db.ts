@@ -1,4 +1,4 @@
-import { Student, Instructor, Package, StudentPackage, Class, Payment } from '../types';
+import { Student, Instructor, Package, StudentPackage, Class, Payment, Equipment } from '../types';
 
 export enum OperationType {
   CREATE = 'create',
@@ -21,7 +21,8 @@ export const LS_KEYS = {
   packages: 'pacific_surf_packages_ls',
   studentPackages: 'pacific_surf_student_packages_ls',
   classes: 'pacific_surf_classes_ls',
-  payments: 'pacific_surf_payments_ls'
+  payments: 'pacific_surf_payments_ls',
+  equipment: 'pacific_surf_equipment_ls'
 };
 
 // Check if we should use LocalStorage Mode (Static deployment like GitHub Pages)
@@ -440,6 +441,63 @@ export const deletePayment = async (id: string): Promise<void> => {
     setLS(LS_KEYS.payments, payments.filter(p => p.id !== id));
   } else {
     await fetch(`/api/payments/${id}`, { method: 'DELETE' });
+  }
+  triggerPostMutation();
+};
+
+// --- Equipment ---
+export const getEquipment = async (): Promise<Equipment[]> => {
+  if (isLocalStorageMode()) {
+    return getLS<Equipment>(LS_KEYS.equipment);
+  }
+  const res = await fetch('/api/equipment');
+  return res.json();
+};
+
+export const addEquipment = async (item: Omit<Equipment, 'id'>): Promise<Equipment> => {
+  let result: Equipment;
+  if (isLocalStorageMode()) {
+    const list = getLS<Equipment>(LS_KEYS.equipment);
+    const newItem = { ...item, id: 'equip-' + Math.random().toString(36).substr(2, 9) };
+    list.push(newItem);
+    setLS(LS_KEYS.equipment, list);
+    result = newItem;
+  } else {
+    const res = await fetch('/api/equipment', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(item)
+    });
+    result = await res.json();
+  }
+  triggerPostMutation();
+  return result;
+};
+
+export const updateEquipment = async (id: string, data: Partial<Equipment>): Promise<void> => {
+  if (isLocalStorageMode()) {
+    const list = getLS<Equipment>(LS_KEYS.equipment);
+    const index = list.findIndex(e => e.id === id);
+    if (index !== -1) {
+      list[index] = { ...list[index], ...data };
+      setLS(LS_KEYS.equipment, list);
+    }
+  } else {
+    await fetch(`/api/equipment/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+  }
+  triggerPostMutation();
+};
+
+export const deleteEquipment = async (id: string): Promise<void> => {
+  if (isLocalStorageMode()) {
+    const list = getLS<Equipment>(LS_KEYS.equipment);
+    setLS(LS_KEYS.equipment, list.filter(e => e.id !== id));
+  } else {
+    await fetch(`/api/equipment/${id}`, { method: 'DELETE' });
   }
   triggerPostMutation();
 };
