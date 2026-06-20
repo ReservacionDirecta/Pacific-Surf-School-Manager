@@ -378,7 +378,7 @@ export default function Classes({ onNavigate }: { onNavigate?: (view: string) =>
                 </span>
                 <input 
                   type="text" 
-                  placeholder="Escribe el nombre del surfer..." 
+                    placeholder="Buscar alumno..."
                   value={filterStudent}
                   onChange={e => setFilterStudent(e.target.value)}
                   className="w-full rounded-xl border border-slate-200 text-slate-800 pl-9 pr-4 py-2 sm:text-xs focus:border-cyan-500 outline-none transition bg-slate-50/50 focus:bg-white"
@@ -456,7 +456,7 @@ export default function Classes({ onNavigate }: { onNavigate?: (view: string) =>
                     Fecha y Hora <SortIcon col="date" />
                   </th>
                   <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-widest font-mono cursor-pointer hover:text-slate-700 select-none group" onClick={() => handleSort('student')}>
-                    Alumno / Surfer <SortIcon col="student" />
+                    Alumno <SortIcon col="student" />
                   </th>
                   <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-widest font-mono cursor-pointer hover:text-slate-700 select-none group" onClick={() => handleSort('instructor')}>
                     Instructor Autorizado <SortIcon col="instructor" />
@@ -478,7 +478,7 @@ export default function Classes({ onNavigate }: { onNavigate?: (view: string) =>
                       <div className="text-[10px] text-slate-400 font-mono">ID: {cls.studentId}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-slate-600 font-medium">{instructors[cls.instructorId]?.name || 'Coach independiente'}</div>
+                      <div className="text-sm text-slate-600 font-medium">{instructors[cls.instructorId]?.name || 'Instructor independiente'}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase font-mono border
@@ -541,7 +541,7 @@ export default function Classes({ onNavigate }: { onNavigate?: (view: string) =>
                               {format(parseISO(cls.date), 'HH:mm')} hrs
                             </p>
                             <h4 className="text-sm font-bold text-slate-900 mt-1.5 font-display">{students[cls.studentId]?.name || 'Desconocido'}</h4>
-                            <p className="text-xs text-slate-450 mt-0.5">Coach: {instructors[cls.instructorId]?.name || 'Pasajero libre'}</p>
+                            <p className="text-xs text-slate-450 mt-0.5">Instructor: {instructors[cls.instructorId]?.name || 'Pasajero libre'}</p>
                           </div>
                           <span className={`inline-flex px-2 py-0.5 rounded-lg text-[10px] uppercase font-bold tracking-wider font-mono ${
                             cls.status === 'scheduled' ? 'bg-cyan-50 border border-cyan-100 text-cyan-850' :
@@ -688,7 +688,7 @@ export default function Classes({ onNavigate }: { onNavigate?: (view: string) =>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Alumno / Surfer *</label>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Alumno *</label>
                 <select 
                   required 
                   value={studentId} 

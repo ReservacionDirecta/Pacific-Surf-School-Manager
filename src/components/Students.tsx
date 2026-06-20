@@ -375,7 +375,7 @@ export default function Students({ onNavigate }: { onNavigate?: (view: string) =
           }`}
         >
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider font-mono">Surfers Totales</span>
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider font-mono">Alumnos Totales</span>
             <div className="p-1.5 rounded-lg bg-blue-50 text-blue-600">
               <Users className="w-4 h-4" />
             </div>
@@ -545,11 +545,11 @@ export default function Students({ onNavigate }: { onNavigate?: (view: string) =
           <table className="min-w-full divide-y divide-slate-150">
             <thead className="bg-slate-50/70">
               <tr>
-                <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-widest font-mono">Nombre del Surfer</th>
+                <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-widest font-mono">Nombre del Alumno</th>
                 <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-widest font-mono">Contacto / Apoderado</th>
                 <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-widest font-mono">Edad</th>
                 <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-widest font-mono">Tabla Propia</th>
-                <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-widest font-mono">Paquete / Estado</th>
+                <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-widest font-mono">Plan / Estado</th>
                 <th className="px-6 py-3.5 text-right text-xs font-bold text-slate-400 uppercase tracking-widest font-mono">Acciones</th>
               </tr>
             </thead>
@@ -673,7 +673,7 @@ export default function Students({ onNavigate }: { onNavigate?: (view: string) =
                 <tr>
                   <td colSpan={6} className="px-6 py-12 text-center text-sm text-slate-400 bg-slate-50/45 italic">
                     <AlertTriangle className="w-7 h-7 text-amber-500 mx-auto opacity-75 mb-2" />
-                    No se encontraron surfers que coincidan con los filtros de búsqueda especificados.
+                    No se encontraron alumnos que coincidan con los filtros de búsqueda especificados.
                   </td>
                 </tr>
               )}
@@ -722,7 +722,7 @@ export default function Students({ onNavigate }: { onNavigate?: (view: string) =
                   value={email} 
                   onChange={e => setEmail(e.target.value)} 
                   className="mt-1 block w-full rounded-xl border border-slate-200 text-slate-850 px-3.5 py-2.5 sm:text-sm focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 placeholder-slate-450 outline-none transition" 
-                  placeholder="Ej: surfer@pacificsurf.com" 
+                  placeholder="Ej: alumno@pacificsurf.com" 
                 />
               </div>
 
@@ -786,9 +786,9 @@ export default function Students({ onNavigate }: { onNavigate?: (view: string) =
               
               {!editingStudent ? (
                 <div className="pt-4 border-t border-slate-100">
-                  <h4 className="font-bold text-xs text-slate-700 mb-2 uppercase tracking-wider">Asignar Paquete Inicial (Opcional)</h4>
+                  <h4 className="font-bold text-xs text-slate-700 mb-2 uppercase tracking-wider">Asignar Plan Inicial (Opcional)</h4>
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-400 uppercase">Paquete de Clase</label>
+                    <label className="block text-[11px] font-bold text-slate-400 uppercase">Plan de Clase</label>
                     <select 
                       value={selectedPackageId} 
                       onChange={e => setSelectedPackageId(e.target.value)} 

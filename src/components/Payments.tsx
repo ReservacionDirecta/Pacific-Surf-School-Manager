@@ -139,7 +139,7 @@ export default function Payments({ onNavigate }: { onNavigate?: (view: string) =
   };
 
   const handleDeleteHistoryItem = async (id: string, spId: string, amount: number) => {
-    if (!window.confirm('¿Estás seguro de eliminar este registro de pago? Se restará del total pagado del paquete.')) return;
+    if (!window.confirm('¿Estás seguro de eliminar este registro de pago? Se restará del total pagado del plan.')) return;
     
     try {
       const sp = studentPackages.find(p => p.id === spId);
@@ -157,7 +157,7 @@ export default function Payments({ onNavigate }: { onNavigate?: (view: string) =
   const handleAssignPackageSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!assignStudentId || !assignPackageId) {
-      alert("Selecciona un alumno y un paquete.");
+      alert("Selecciona un alumno y un plan.");
       return;
     }
 
@@ -187,7 +187,7 @@ export default function Payments({ onNavigate }: { onNavigate?: (view: string) =
           amount: initialPaid,
           date: new Date().toISOString(),
           method: 'Efectivo',
-          notes: assignNotes || "Pago inicial por renovación de paquete"
+          notes: assignNotes || "Pago inicial por renovación de plan"
         });
       }
 
@@ -198,10 +198,10 @@ export default function Payments({ onNavigate }: { onNavigate?: (view: string) =
       setAssignNotes('');
       setAssignDueDate('');
       await fetchData();
-      alert("¡Paquete asignado exitosamente al alumno!");
+      alert("¡Plan asignado exitosamente al alumno!");
     } catch (error) {
       console.error("Error creating student package:", error);
-      alert("Error al asignar paquete");
+      alert("Error al asignar plan");
     }
   };
 
@@ -408,7 +408,7 @@ export default function Payments({ onNavigate }: { onNavigate?: (view: string) =
                 Alumno <SortIcon col="student" />
               </th>
               <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-widest font-mono cursor-pointer hover:text-slate-700 select-none" onClick={() => handleSort('package')}>
-                Paquete de surf <SortIcon col="package" />
+                Plan de Surf <SortIcon col="package" />
               </th>
               <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-widest font-mono cursor-pointer hover:text-slate-700 select-none" onClick={() => handleSort('total')}>
                 Precio Total <SortIcon col="total" />
@@ -516,7 +516,7 @@ export default function Payments({ onNavigate }: { onNavigate?: (view: string) =
             
             <div className="text-xs text-slate-705 mb-4 bg-slate-50 border border-slate-150 p-3.5 rounded-xl space-y-1 leading-relaxed">
               <p>Alumno: <span className="font-bold text-slate-900 font-display">{students[editingPayment.studentId]?.name}</span></p>
-              <p>Paquete: <span className="font-bold text-slate-900 font-display">{editingPayment.packageName}</span></p>
+              <p>Plan: <span className="font-bold text-slate-900 font-display">{editingPayment.packageName}</span></p>
               <p>Saldo Pendiente: <span className="font-black text-rose-600 font-mono">S/. {editingPayment.totalPrice - editingPayment.amountPaid}</span></p>
             </div>
             
@@ -619,14 +619,14 @@ export default function Payments({ onNavigate }: { onNavigate?: (view: string) =
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Seleccionar Paquete de Clases *</label>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Seleccionar Plan de Clases *</label>
                 <select 
                   required 
                   value={assignPackageId} 
                   onChange={e => setAssignPackageId(e.target.value)}
                   className="mt-1 block w-full rounded-xl border border-slate-200 text-slate-805 bg-white px-3.5 py-2.5 sm:text-sm focus:border-cyan-500 outline-none transition"
                 >
-                  <option value="">-- Elige un Paquete --</option>
+                  <option value="">-- Elige un Plan --</option>
                   {packages.map(p => (
                     <option key={p.id} value={p.id}>{p.name} (S/. {p.price} - {p.totalClasses} clases)</option>
                   ))}
@@ -753,7 +753,7 @@ export default function Payments({ onNavigate }: { onNavigate?: (view: string) =
                     ))}
                   {payments.filter(p => p.studentPackageId === showHistory).length === 0 && (
                     <tr>
-                      <td colSpan={5} className="px-4 py-8 text-center text-slate-400 italic">No se han registrado pagos parciales para este paquete.</td>
+                      <td colSpan={5} className="px-4 py-8 text-center text-slate-400 italic">No se han registrado pagos parciales para este plan.</td>
                     </tr>
                   )}
                 </tbody>
@@ -796,7 +796,7 @@ export default function Payments({ onNavigate }: { onNavigate?: (view: string) =
 
             <form onSubmit={handleSaveDetails} className="space-y-3">
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Tipo de Paquete</label>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Tipo de Plan</label>
                 <input 
                   type="text"
                   value={editPackageName}

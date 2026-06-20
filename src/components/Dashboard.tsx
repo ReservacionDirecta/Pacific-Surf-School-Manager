@@ -164,9 +164,9 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (view: string) 
   // Time-based greeting helper
   const getGreeting = () => {
     const hours = new Date().getHours();
-    if (hours < 12) return '¡Buenos días, Coach!';
-    if (hours < 18) return '¡Buenas tardes, Tracker!';
-    return '¡Buenas noches, Pacific Admin!';
+    if (hours < 12) return '¡Buenos días!';
+    if (hours < 18) return '¡Buenas tardes!';
+    return '¡Buenas noches!';
   };
 
   if (loading) {
@@ -293,7 +293,7 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (view: string) 
           <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-full blur-2xl pointer-events-none"></div>
           <div className="space-y-1 relative z-10">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block font-mono">Alumnos Activos</span>
-            <span className="text-2xl font-black text-slate-900 mt-1 block font-display">{totalStudentsCount} surfers</span>
+            <span className="text-2xl font-black text-slate-900 mt-1 block font-display">{totalStudentsCount} alumnos</span>
             <span className="text-[11px] text-blue-600 hover:text-blue-700 font-semibold inline-flex items-center gap-0.5">Ver directorio <ChevronRight className="w-3 h-3" /></span>
           </div>
           <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100 relative z-10 shadow-xs">
@@ -328,8 +328,8 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (view: string) 
         >
           <div className="absolute top-0 right-0 w-24 h-24 bg-violet-500/5 rounded-full blur-2xl pointer-events-none"></div>
           <div className="space-y-1 relative z-10">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block font-mono">Staff Coaches</span>
-            <span className="text-2xl font-black text-slate-900 mt-1 block font-display">{instructorsCount} Coaches</span>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block font-mono">Instructores</span>
+            <span className="text-2xl font-black text-slate-900 mt-1 block font-display">{instructorsCount} Instructores</span>
             <span className="text-[11px] text-violet-600 hover:text-violet-700 font-semibold inline-flex items-center gap-0.5">Coordinar staff <ChevronRight className="w-3 h-3" /></span>
           </div>
           <div className="w-12 h-12 rounded-xl bg-violet-50 text-violet-600 flex items-center justify-center border border-violet-100 relative z-10 shadow-xs">
@@ -351,7 +351,7 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (view: string) 
           </div>
           <div className="flex items-baseline gap-2 mt-2">
             <span className="text-3.5xl font-extrabold text-orange-600 font-display">{lowClasses.length}</span>
-            <span className="text-xs text-slate-400">surfers</span>
+            <span className="text-xs text-slate-400">alumnos</span>
           </div>
           <p className="text-xs text-slate-400 mt-1">Alumnos activos con ≤ 2 clases disponibles</p>
         </div>
@@ -362,7 +362,7 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (view: string) 
           className="bg-white p-5 rounded-xl shadow-sm border border-slate-100 border-l-4 border-l-rose-500 cursor-pointer hover:shadow-md transition-shadow relative overflow-hidden"
         >
           <div className="flex justify-between items-center">
-            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider font-mono">Saldos de Paquete</h3>
+            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider font-mono">Saldos de Plan</h3>
             <span className="bg-rose-50 text-rose-700 px-2 py-0.5 rounded text-[10px] font-bold tracking-wider font-mono">{pendingPayments.length} Deudores</span>
           </div>
           <div className="flex items-baseline gap-2 mt-2">
@@ -446,7 +446,7 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (view: string) 
                         </span>
                         <div>
                           <p className="font-bold text-slate-900 text-sm font-display">{students[cls.studentId]?.name || 'Desconocido'}</p>
-                          <p className="text-xs text-slate-450 font-medium">Coach: {instructors.find(i => i.id === cls.instructorId)?.name || 'Sin coach asignado'}</p>
+                            <p className="text-xs text-slate-450 font-medium">Instructor: {instructors.find(i => i.id === cls.instructorId)?.name || 'Sin instructor asignado'}</p>
                         </div>
                       </div>
 
@@ -479,7 +479,7 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (view: string) 
         {/* Quick Staff Contacts and Directory summary */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 col-span-1 flex flex-col justify-between overflow-hidden">
           <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
-            <h3 className="text-base font-bold text-slate-800 font-display">Coaches Autorizados</h3>
+            <h3 className="text-base font-bold text-slate-800 font-display">Instructores</h3>
             <p className="text-xs text-slate-400">Coordinación de instructores en la base</p>
           </div>
           

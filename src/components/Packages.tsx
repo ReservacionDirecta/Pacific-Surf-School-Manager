@@ -95,7 +95,7 @@ export default function Packages() {
           await addPackage(pkg);
         }
       }
-      alert('Paquetes iniciales inyectados correctamente');
+      alert('Planes iniciales inyectados correctamente');
       await fetchData();
     } catch (error) {
       console.error("Error injecting packages:", error);
@@ -112,7 +112,7 @@ export default function Packages() {
           <div className="flex items-center gap-2 text-cyan-400 text-xs font-mono font-bold tracking-widest uppercase mb-1">
             <PackageIcon className="w-4 h-4 text-cyan-450" /> Programas de Instrucción
           </div>
-          <h2 className="text-2xl font-extrabold font-display text-white tracking-tight">Catálogo de Paquetes</h2>
+          <h2 className="text-2xl font-extrabold font-display text-white tracking-tight">Catálogo de Planes</h2>
           <p className="text-sm text-slate-300">Planes oficiales de instrucción grupal, personalizada y alquileres de Pacific Surf.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto relative z-10">
@@ -192,7 +192,7 @@ export default function Packages() {
           >
             <div className="flex justify-between items-center border-b border-slate-100 pb-3.5 mb-4">
               <h3 className="text-lg font-bold text-slate-900 font-display">
-                {editingPackage ? 'Editar Paquete' : 'Crear Nuevo Paquete'}
+                {editingPackage ? 'Editar Plan' : 'Crear Nuevo Plan'}
               </h3>
               <button 
                 onClick={handleCloseModal}
@@ -204,7 +204,7 @@ export default function Packages() {
             
             <form onSubmit={handleAddPackage} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Nombre del Paquete *</label>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Nombre del Plan *</label>
                 <input 
                   required 
                   type="text" 
@@ -271,7 +271,7 @@ export default function Packages() {
                   type="submit" 
                   className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-bold rounded-xl text-sm shadow-md cursor-pointer transition active:scale-98 w-full sm:w-auto"
                 >
-                  {editingPackage ? 'Guardar Cambios' : 'Registrar Paquete'}
+                  {editingPackage ? 'Guardar Cambios' : 'Registrar Plan'}
                 </button>
               </div>
             </form>

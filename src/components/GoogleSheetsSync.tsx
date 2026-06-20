@@ -223,7 +223,7 @@ export default function GoogleSheetsSync() {
       await writeSheetData(activeToken, spreadsheetId, 'Clases!A1:E5000', clasesValues);
 
       // 4. Export Student Packages
-      addLog(`Exportando ${studentPkgs.length} Paquetes Comprados...`);
+      addLog(`Exportando ${studentPkgs.length} Planes...`);
       const spValues = [
         ['ID', 'Alumno ID', 'Paquete ID', 'Nombre Paquete', 'Total Clases', 'Clases Usadas', 'Precio Total', 'Monto Pagado', 'Fecha Limite Pago', 'Estado'],
         ...studentPkgs.map(sp => [
@@ -537,7 +537,7 @@ export default function GoogleSheetsSync() {
             id: row[idIdx] || `sp-${Date.now()}-${i}`,
             studentId,
             packageId,
-            packageName: row[packageNameIdx] || 'Paquete',
+            packageName: row[packageNameIdx] || 'Plan',
             totalClasses: Number(row[totalClassesIdx]) || 1,
             classesUsed: Number(row[classesUsedIdx]) || 0,
             totalPrice: Number(row[totalPriceIdx]) || 0,
@@ -547,10 +547,10 @@ export default function GoogleSheetsSync() {
           });
         }
       }
-      addLog(`Se leyeron ${parsedStudentPackages.length} paquetes de alumnos.`);
+      addLog(`Se leyeron ${parsedStudentPackages.length} planes de alumnos.`);
 
       // 5. Gather current local packages and payments to avoid dropping them
-      addLog('Consultando paquetes y pagos locales...');
+      addLog('Consultando planes y pagos locales...');
       const [currentPkgs, currentPayments] = await Promise.all([
         getPackages(),
         getPayments().catch(() => [])
@@ -797,7 +797,7 @@ export default function GoogleSheetsSync() {
                   Restaurar Base de Datos Completa (Importación Destructiva)
                 </h4>
                 <p className="text-[11px] text-slate-500 max-w-xl leading-relaxed">
-                  Borra todos los alumnos, clases, paquetes de alumnos e instructores locales e importa todo lo que tengas cargado en Google Sheets. Ideal para el arranque inicial en una máquina nueva.
+                  Borra todos los alumnos, clases, planes de alumnos e instructores locales e importa todo lo que tengas cargado en Google Sheets. Ideal para el arranque inicial en una máquina nueva.
                 </p>
               </div>
               <button

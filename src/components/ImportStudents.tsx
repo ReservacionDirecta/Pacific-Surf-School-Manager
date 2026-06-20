@@ -73,7 +73,7 @@ export default function ImportStudents() {
 
   const handleImport = async () => {
     if (packages.length === 0) {
-      alert("Por favor, inyecta primero los paquetes en la sección de Paquetes.");
+      alert("Por favor, inyecta primero los planes en la sección de Planes.");
       return;
     }
 

@@ -127,7 +127,7 @@ export default function Instructors() {
           <div className="flex items-center gap-2 text-cyan-400 text-xs font-mono font-bold tracking-widest uppercase mb-1">
             <Briefcase className="w-4 h-4 text-cyan-400" /> Plantilla Deportiva
           </div>
-          <h2 className="text-2xl font-extrabold font-display text-white tracking-tight">Staff de Coaches</h2>
+          <h2 className="text-2xl font-extrabold font-display text-white tracking-tight">Instructores</h2>
           <p className="text-sm text-slate-300">Coordinación de instructores oficiales para clases diarias y control de asistencia.</p>
         </div>
         <button 
@@ -135,7 +135,7 @@ export default function Instructors() {
           className="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-extrabold px-5 py-3 rounded-xl shadow-lg cursor-pointer transition flex items-center gap-2 text-sm z-10 hover:translate-y-[-1px]"
         >
           <UserPlus className="w-5 h-5" />
-          Registrar Coach
+          Registrar Instructor
         </button>
       </div>
 
@@ -230,7 +230,7 @@ export default function Instructors() {
           >
             <div className="flex justify-between items-center border-b border-slate-100 pb-3.5 mb-4">
               <h3 className="text-lg font-bold text-slate-900 font-display">
-                {editingInstructor ? 'Editar Coach' : 'Registrar Nuevo Coach'}
+                {editingInstructor ? 'Editar Instructor' : 'Registrar Nuevo Instructor'}
               </h3>
               <button 
                 onClick={() => setShowAddModal(false)}
@@ -242,14 +242,14 @@ export default function Instructors() {
             
             <form onSubmit={handleAddInstructor} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Nombre del Coach *</label>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Nombre del Instructor *</label>
                 <input 
                   required 
                   type="text" 
                   value={name} 
                   onChange={e => setName(e.target.value)} 
                   className="mt-1 block w-full rounded-xl border border-slate-200 text-slate-850 px-3.5 py-2.5 sm:text-sm focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 placeholder-slate-450 outline-none transition" 
-                  placeholder="Ej: Coach Renato" 
+                  placeholder="Ej: Renato" 
                 />
               </div>
 
@@ -287,7 +287,7 @@ export default function Instructors() {
                   type="submit" 
                   className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-bold rounded-xl text-sm shadow-md cursor-pointer transition active:scale-98 w-full sm:w-auto"
                 >
-                  {editingInstructor ? 'Guardar Cambios' : 'Registrar Coach'}
+                  {editingInstructor ? 'Guardar Cambios' : 'Registrar Instructor'}
                 </button>
               </div>
             </form>

@@ -96,14 +96,14 @@ export default function App() {
 
   // Sidebar navigation menu items
   const menuItems = [
-    { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard },
+    { id: 'dashboard', name: 'Panel Principal', icon: LayoutDashboard },
     { id: 'students', name: 'Alumnos', icon: Users },
-    { id: 'instructors', name: 'Instructors', icon: UserCheck },
-    { id: 'packages', name: 'Paquetes', icon: PackageIcon },
+    { id: 'instructors', name: 'Instructores', icon: UserCheck },
+    { id: 'packages', name: 'Planes', icon: PackageIcon },
     { id: 'classes', name: 'Clases', icon: Calendar },
     { id: 'payments', name: 'Cobranza', icon: Wallet },
-    { id: 'sheets', name: 'Sincronizar Sheets', icon: RefreshCw },
-    { id: 'import', name: 'Importar Alumnos', icon: Upload },
+    { id: 'sheets', name: 'Sincronizar', icon: RefreshCw },
+    { id: 'import', name: 'Importar', icon: Upload },
   ];
 
   if (loading) {
@@ -192,7 +192,7 @@ export default function App() {
               type="submit"
               className="w-full bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white py-3 rounded-lg font-bold text-sm tracking-wide shadow-lg shadow-cyan-500/10 cursor-pointer active:scale-98 transition duration-200 mt-2"
             >
-              {isRegistering ? 'Registrarse en la Escuela' : 'Entrar al Dashboard'}
+              {isRegistering ? 'Registrarse en la Escuela' : 'Ingresar al Panel'}
             </button>
 
             <button 

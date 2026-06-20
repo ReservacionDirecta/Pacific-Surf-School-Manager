@@ -513,7 +513,7 @@ export default function StudentDossierModal({ student, isOpen, onClose, onDataCh
               onClick={() => setActiveTab('summary')}
               className={`py-2.5 outline-none transition cursor-pointer relative ${activeTab === 'summary' ? 'text-cyan-400' : 'text-slate-400 hover:text-white'}`}
             >
-              Ficha Resumen
+              Resumen del Alumno
               {activeTab === 'summary' && <span className="absolute bottom-0 left-0 w-full h-0.5 bg-cyan-400 rounded-full"></span>}
             </button>
             <button 
@@ -545,7 +545,7 @@ export default function StudentDossierModal({ student, isOpen, onClose, onDataCh
           {loading ? (
             <div className="flex flex-col items-center justify-center py-24 space-y-2">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-600"></div>
-              <p className="text-xs text-slate-500 font-mono">Buscando expediente...</p>
+              <p className="text-xs text-slate-500 font-mono">Buscando ficha...</p>
             </div>
           ) : (
             <>
@@ -616,9 +616,9 @@ export default function StudentDossierModal({ student, isOpen, onClose, onDataCh
                     ) : (
                       <div className="p-6 bg-amber-50/50 border border-amber-150 text-center rounded-xl">
                         <AlertTriangle className="w-7 h-7 text-amber-650 mx-auto opacity-75 mb-2" />
-                        <h5 className="text-xs font-bold text-amber-850">Sin Paquetes Activos de Surf</h5>
+                        <h5 className="text-xs font-bold text-amber-850">Sin Planes Activos de Surf</h5>
                         <p className="text-[11px] text-slate-400 mt-1 max-w-xs mx-auto">
-                          Este surfer no tiene lecciones contratadas disponibles. Es obligatorio asignarle un plan antes de dictarle lección.
+                          Este alumno no tiene lecciones contratadas disponibles. Es obligatorio asignarle un plan antes de dictarle clase.
                         </p>
                         <button 
                           onClick={() => {
@@ -681,7 +681,7 @@ export default function StudentDossierModal({ student, isOpen, onClose, onDataCh
                           <div key={cls.id} className="p-4 flex justify-between items-center hover:bg-slate-50/60">
                             <div>
                               <p className="font-bold text-slate-900">{format(parseISO(cls.date), 'dd/MM/yyyy HH:mm')} hrs</p>
-                              <p className="text-slate-450 mt-0.5">Coach: {coach}</p>
+                              <p className="text-slate-450 mt-0.5">Instructor: {coach}</p>
                             </div>
                             <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider font-mono ${
                               cls.status === 'scheduled' ? 'bg-cyan-50 border border-cyan-100 text-cyan-800' :
@@ -733,7 +733,7 @@ export default function StudentDossierModal({ student, isOpen, onClose, onDataCh
 
                       <form onSubmit={handleAssignPackage} className="space-y-3 mr-1 text-xs">
                         <div>
-                          <label className="block text-slate-500 font-bold mb-1">Elegir Paquete de Clases *</label>
+                          <label className="block text-slate-500 font-bold mb-1">Elegir Plan de Clases *</label>
                           <select 
                             required 
                             value={newPkgId} 
@@ -742,7 +742,7 @@ export default function StudentDossierModal({ student, isOpen, onClose, onDataCh
                           >
                             <option value="">-- Selecciona --</option>
                             {packages.map(p => (
-                              <option key={p.id} value={p.id}>{p.name} (S/. {p.price} - {p.totalClasses} lecciones)</option>
+                              <option key={p.id} value={p.id}>{p.name} (S/. {p.price} - {p.totalClasses} clases)</option>
                             ))}
                           </select>
                         </div>
@@ -998,8 +998,8 @@ export default function StudentDossierModal({ student, isOpen, onClose, onDataCh
                 <div className="space-y-6 text-xs">
                   <div className="flex justify-between items-center bg-slate-50 border border-slate-200 rounded-xl p-4">
                     <div>
-                      <h4 className="font-bold text-slate-900 text-sm font-display">Clases del Surfer</h4>
-                      <p className="text-slate-400 text-xs mt-0.5">Control de asistencia, reservas y coaches vinculados.</p>
+                      <h4 className="font-bold text-slate-900 text-sm font-display">Clases del Alumno</h4>
+                      <p className="text-slate-400 text-xs mt-0.5">Control de asistencia, reservas e instructores vinculados.</p>
                     </div>
                     {!showAddClass && (
                       <button 
@@ -1037,14 +1037,14 @@ export default function StudentDossierModal({ student, isOpen, onClose, onDataCh
                           </div>
                           
                           <div>
-                            <label className="block text-slate-500 font-bold mb-1">Coach Autorizado *</label>
+                            <label className="block text-slate-500 font-bold mb-1">Instructor *</label>
                             <select 
                               required 
                               value={classInstructorId} 
                               onChange={e => setClassInstructorId(e.target.value)}
                               className="bg-white border border-slate-200 rounded-xl w-full p-2.5 text-slate-805"
                             >
-                              <option value="">-- Elige Coach --</option>
+                              <option value="">-- Elige Instructor --</option>
                               {instructors.map(i => (
                                 <option key={i.id} value={i.id}>{i.name}</option>
                               ))}
@@ -1096,7 +1096,7 @@ export default function StudentDossierModal({ student, isOpen, onClose, onDataCh
                                     onChange={e => setEditClassInstructorId(e.target.value)}
                                     className="border border-slate-200 rounded-lg p-1.5 text-xs w-full"
                                   >
-                                    <option value="">-- Elige Coach --</option>
+                              <option value="">-- Elige Instructor --</option>
                                     {instructors.map(i => (
                                       <option key={i.id} value={i.id}>{i.name}</option>
                                     ))}
@@ -1331,7 +1331,7 @@ export default function StudentDossierModal({ student, isOpen, onClose, onDataCh
             onClick={onClose} 
             className="px-5 py-2.5 bg-slate-900 border border-slate-800 hover:bg-slate-800 text-white font-bold rounded-xl text-xs cursor-pointer shadow-sm active:scale-98 transition"
           >
-            Cerrar Expediente
+            Cerrar Ficha
           </button>
         </div>
 
