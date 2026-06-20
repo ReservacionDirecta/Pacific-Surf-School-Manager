@@ -512,18 +512,18 @@ export default function Students({ onNavigate }: { onNavigate?: (view: string) =
         <div className="flex items-center gap-2 flex-wrap text-xs bg-slate-50 p-2.5 rounded-xl border border-slate-150">
           <span className="text-slate-450 font-bold font-mono text-[10px] uppercase">Filtros Activos:</span>
           {filterName && (
-            <span className="bg-slate-200 text-slate-700 px-2 py-0.5 rounded-md flex items-center gap-1 font-medium">
-              Alineación: "{filterName}" <X className="w-3 h-3 cursor-pointer" onClick={() => setFilterName('')} />
+            <span className="bg-slate-200 text-slate-700 pl-2 pr-1 py-0.5 rounded-md flex items-center gap-1 font-medium">
+              Alineación: "{filterName}" <X className="w-4 h-4 cursor-pointer p-0.5 box-content" onClick={() => setFilterName('')} />
             </span>
           )}
           {filterStatus !== 'Todos' && (
-            <span className="bg-slate-200 text-slate-700 px-2 py-0.5 rounded-md flex items-center gap-1 font-medium">
-              Matrícula: {filterStatus} <X className="w-3 h-3 cursor-pointer" onClick={() => setFilterStatus('Todos')} />
+            <span className="bg-slate-200 text-slate-700 pl-2 pr-1 py-0.5 rounded-md flex items-center gap-1 font-medium">
+              Matrícula: {filterStatus} <X className="w-4 h-4 cursor-pointer p-0.5 box-content" onClick={() => setFilterStatus('Todos')} />
             </span>
           )}
           {filterBoard !== 'Todos' && (
-            <span className="bg-slate-200 text-slate-700 px-2 py-0.5 rounded-md flex items-center gap-1 font-medium">
-              Tabla: {filterBoard} <X className="w-3 h-3 cursor-pointer" onClick={() => setFilterBoard('Todos')} />
+            <span className="bg-slate-200 text-slate-700 pl-2 pr-1 py-0.5 rounded-md flex items-center gap-1 font-medium">
+              Tabla: {filterBoard} <X className="w-4 h-4 cursor-pointer p-0.5 box-content" onClick={() => setFilterBoard('Todos')} />
             </span>
           )}
           <button 
@@ -642,28 +642,30 @@ export default function Students({ onNavigate }: { onNavigate?: (view: string) =
                   <td className="px-6 py-4">
                     {getActivePackageDisplay(student.id || '')}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-xs font-bold space-x-2.5">
-                    <button 
-                      onClick={() => setSelectedDossierStudent(student)}
-                      className="text-emerald-600 hover:text-emerald-700 bg-emerald-50/50 hover:bg-emerald-50 border border-emerald-200 px-2.5 py-1.5 rounded-xl transition cursor-pointer inline-flex items-center gap-1 shadow-2xs hover:scale-102 active:scale-98"
-                    >
-                      <Eye className="w-3.5 h-3.5" />
-                      Ficha Expediente
-                    </button>
-                    <button 
-                      onClick={() => handleEditClick(student)}
-                      className="text-blue-600 hover:text-blue-700 bg-blue-50/40 hover:bg-blue-50 border border-blue-200 px-2.5 py-1.5 rounded-xl transition cursor-pointer inline-flex items-center gap-1 shadow-2xs hover:scale-102 active:scale-98"
-                    >
-                      <Edit className="w-3.5 h-3.5" />
-                      Editar
-                    </button>
-                    <button 
-                      onClick={() => handleDeleteStudent(student.id!)}
-                      className="text-red-500 hover:text-red-650 bg-red-50/30 hover:bg-red-50 border border-red-200 px-2.5 py-1.5 rounded-xl transition cursor-pointer inline-flex items-center gap-1 shadow-2xs hover:scale-102 active:scale-98"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                      Eliminar
-                    </button>
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-xs font-bold">
+                    <div className="flex flex-col sm:flex-row items-end sm:items-center gap-1.5 sm:gap-2">
+                      <button 
+                        onClick={() => setSelectedDossierStudent(student)}
+                        className="text-emerald-600 hover:text-emerald-700 bg-emerald-50/70 hover:bg-emerald-50 border border-emerald-200 px-3 py-2 rounded-xl transition cursor-pointer inline-flex items-center gap-1.5 hover:scale-102 active:scale-98 w-full sm:w-auto justify-center"
+                      >
+                        <Eye className="w-4 h-4" />
+                        Ficha
+                      </button>
+                      <button 
+                        onClick={() => handleEditClick(student)}
+                        className="text-blue-600 hover:text-blue-700 bg-blue-50/60 hover:bg-blue-50 border border-blue-200 px-3 py-2 rounded-xl transition cursor-pointer inline-flex items-center gap-1.5 hover:scale-102 active:scale-98 w-full sm:w-auto justify-center"
+                      >
+                        <Edit className="w-4 h-4" />
+                        Editar
+                      </button>
+                      <button 
+                        onClick={() => handleDeleteStudent(student.id!)}
+                        className="text-red-500 hover:text-red-650 bg-red-50/50 hover:bg-red-50 border border-red-200 px-3 py-2 rounded-xl transition cursor-pointer inline-flex items-center gap-1.5 hover:scale-102 active:scale-98 w-full sm:w-auto justify-center"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        Eliminar
+                      </button>
+                    </div>
                   </td>
                 </motion.tr>
               ))}
@@ -840,17 +842,17 @@ export default function Students({ onNavigate }: { onNavigate?: (view: string) =
                 </div>
               )}
 
-              <div className="flex justify-end space-x-3 pt-4 border-t border-slate-100">
+              <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 pt-4 border-t border-slate-100">
                 <button 
                   type="button" 
                   onClick={() => setShowAddModal(false)} 
-                  className="px-4 py-2 border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 text-sm font-semibold cursor-pointer transition"
+                  className="px-4 py-2.5 border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 text-sm font-semibold cursor-pointer transition w-full sm:w-auto"
                 >
                   Cancelar
                 </button>
                 <button 
                   type="submit" 
-                  className="px-5 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-bold rounded-xl text-sm shadow-md cursor-pointer transition active:scale-98"
+                  className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-bold rounded-xl text-sm shadow-md cursor-pointer transition active:scale-98 w-full sm:w-auto"
                 >
                   {editingStudent ? 'Guardar Cambios' : 'Registrar'}
                 </button>

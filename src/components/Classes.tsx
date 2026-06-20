@@ -543,7 +543,7 @@ export default function Classes({ onNavigate }: { onNavigate?: (view: string) =>
                             <h4 className="text-sm font-bold text-slate-900 mt-1.5 font-display">{students[cls.studentId]?.name || 'Desconocido'}</h4>
                             <p className="text-xs text-slate-450 mt-0.5">Coach: {instructors[cls.instructorId]?.name || 'Pasajero libre'}</p>
                           </div>
-                          <span className={`inline-flex px-2 py-0.5 rounded-lg text-[9px] uppercase font-bold tracking-wider font-mono ${
+                          <span className={`inline-flex px-2 py-0.5 rounded-lg text-[10px] uppercase font-bold tracking-wider font-mono ${
                             cls.status === 'scheduled' ? 'bg-cyan-50 border border-cyan-100 text-cyan-850' :
                             cls.status === 'completed' ? 'bg-emerald-50 border border-emerald-100 text-emerald-850' : 
                             'bg-slate-200 text-slate-500'
@@ -552,11 +552,11 @@ export default function Classes({ onNavigate }: { onNavigate?: (view: string) =>
                           </span>
                         </div>
                         
-                        <div className="mt-3 flex gap-2 justify-end border-t border-slate-100 pt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="mt-3 flex gap-2 justify-end border-t border-slate-100 pt-2">
                           <select 
                             value={cls.status}
                             onChange={(e) => handleStatusChange(cls, e.target.value as any)}
-                            className="text-[10px] rounded-lg border border-slate-205 p-1 bg-white font-medium"
+                            className="text-[10px] rounded-lg border border-slate-205 p-1.5 bg-white font-medium"
                           >
                             <option value="scheduled">Agendada</option>
                             <option value="completed">Completar</option>
@@ -564,7 +564,7 @@ export default function Classes({ onNavigate }: { onNavigate?: (view: string) =>
                           </select>
                           <button
                             onClick={() => handleDeleteClass(cls)}
-                            className="text-red-500 hover:text-red-700 font-bold text-xs"
+                            className="text-red-500 hover:text-red-700 font-bold text-xs px-3 py-1.5 rounded-lg bg-red-50/50 hover:bg-red-50 border border-red-200"
                           >
                             Eliminar
                           </button>
@@ -635,7 +635,7 @@ export default function Classes({ onNavigate }: { onNavigate?: (view: string) =>
                           {instructors[cls.instructorId]?.name || cls.instructorId || '-'}
                         </td>
                         <td className="px-6 py-3 text-right">
-                          <span className={`inline-flex px-2 py-0.5 rounded-lg text-[9px] uppercase tracking-wide font-mono font-bold ${
+                          <span className={`inline-flex px-2 py-0.5 rounded-lg text-[10px] uppercase tracking-wide font-mono font-bold ${
                             cls.status === 'scheduled' ? 'bg-cyan-50 border border-cyan-100 text-cyan-805' :
                             cls.status === 'completed' ? 'bg-emerald-50 border border-emerald-100 text-emerald-805' : 
                             'bg-rose-50 border border-rose-100 text-rose-805'
@@ -669,7 +669,7 @@ export default function Classes({ onNavigate }: { onNavigate?: (view: string) =>
               <h3 className="text-lg font-bold text-slate-900 font-display">Agendar Reserva de Surf</h3>
               <button 
                 onClick={() => setShowAddModal(false)}
-                className="p-1 rounded-lg text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition"
+                className="p-2 rounded-lg text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -747,17 +747,17 @@ export default function Classes({ onNavigate }: { onNavigate?: (view: string) =>
                 </select>
               </div>
               
-              <div className="flex justify-end space-x-3 pt-4 border-t border-slate-100">
+              <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 pt-4 border-t border-slate-100">
                 <button 
                   type="button" 
                   onClick={() => setShowAddModal(false)} 
-                  className="px-4 py-2 border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 text-sm font-semibold cursor-pointer transition"
+                  className="px-4 py-2.5 border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 text-sm font-semibold cursor-pointer transition w-full sm:w-auto"
                 >
                   Cancelar
                 </button>
                 <button 
                   type="submit" 
-                  className="px-5 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-bold rounded-xl text-sm shadow-md cursor-pointer transition active:scale-98"
+                  className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-bold rounded-xl text-sm shadow-md cursor-pointer transition active:scale-98 w-full sm:w-auto"
                 >
                   Agendar Reserva
                 </button>

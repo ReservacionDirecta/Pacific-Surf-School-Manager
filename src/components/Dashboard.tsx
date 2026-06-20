@@ -208,7 +208,7 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (view: string) 
               <p className="font-bold text-slate-200 text-xs">
                 {hasGoogleAuth ? 'Google Sheets En Línea' : 'SQLite Local Modos'}
               </p>
-              <p className="text-slate-500 font-mono text-[9px] truncate max-w-[180px] mt-0.5">
+              <p className="text-slate-500 font-mono text-[10px] truncate max-w-[180px] mt-0.5">
                 ID: {spreadsheetId}
               </p>
             </div>
@@ -219,7 +219,7 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (view: string) 
               <button
                 disabled={isSyncing}
                 onClick={() => handleSheetsSync(false)}
-                className="flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-700/60 text-emerald-400 hover:text-emerald-300 px-3 py-2 rounded-lg text-[11px] font-bold cursor-pointer transition disabled:opacity-50 shadow-sm"
+                className="flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-700/60 text-emerald-400 hover:text-emerald-300 px-4 py-2.5 rounded-lg text-xs font-bold cursor-pointer transition disabled:opacity-50 shadow-sm"
               >
                 {isSyncing ? (
                   <RefreshCw className="w-3.5 h-3.5 animate-spin" />
@@ -231,7 +231,7 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (view: string) 
             ) : (
               <button
                 onClick={() => onNavigate?.('sheets')}
-                className="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-extrabold px-3.5 py-2.5 rounded-xl text-xs cursor-pointer transition shadow-lg shadow-cyan-500/10 hover:translate-y-[-0.5px]"
+                className="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-extrabold px-4 py-3 rounded-xl text-xs cursor-pointer transition shadow-lg shadow-cyan-500/10 hover:translate-y-[-0.5px]"
               >
                 Vincular Google Sheets
               </button>
@@ -258,7 +258,7 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (view: string) 
           </div>
           <button 
             onClick={() => setSyncMessage('')} 
-            className="text-xs font-bold uppercase tracking-wider hover:opacity-75 transition-opacity cursor-pointer self-center px-2 py-1 border border-black/10 rounded bg-black/5"
+            className="text-xs font-bold uppercase tracking-wider hover:opacity-75 transition-opacity cursor-pointer self-center px-4 py-2.5 border border-black/10 rounded bg-black/5"
           >
             OK
           </button>
@@ -416,7 +416,7 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (view: string) 
                 <p className="text-xs text-slate-400 mt-1 max-w-xs">Aprovecha el tiempo para mantenimiento de tablas o sincronización de planillas.</p>
                 <button 
                   onClick={() => onNavigate?.('classes')}
-                  className="mt-4 text-xs font-bold text-blue-600 hover:text-blue-500 bg-blue-50 hover:bg-blue-100/80 px-3 py-1.5 rounded-lg transition"
+                  className="mt-4 text-xs font-bold text-blue-600 hover:text-blue-500 bg-blue-50 hover:bg-blue-100/80 px-4 py-2.5 rounded-lg transition"
                 >
                   + Agendar una Clase
                 </button>
@@ -529,7 +529,7 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (view: string) 
         <div className="bg-white rounded-2xl shadow-sm overflow-hidden border border-slate-100">
           <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/20 flex justify-between items-center">
             <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest font-mono">Detalle Alertas: Clases por Agotarse</h3>
-            <button onClick={() => onNavigate?.('classes')} className="text-xs text-blue-600 font-bold hover:underline cursor-pointer">Ver todas</button>
+            <button onClick={() => onNavigate?.('classes')} className="text-xs text-blue-600 font-bold px-3 py-2 rounded-lg hover:bg-blue-50 cursor-pointer">Ver todas</button>
           </div>
           <ul className="divide-y divide-slate-150 max-h-72 overflow-y-auto">
             {lowClasses.length === 0 ? (
@@ -561,7 +561,7 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (view: string) 
         <div className="bg-white rounded-2xl shadow-sm overflow-hidden border border-slate-100">
           <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/20 flex justify-between items-center">
             <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest font-mono">Detalle Alertas: Saldos Pendientes (Cobranza)</h3>
-            <button onClick={() => onNavigate?.('payments')} className="text-xs text-blue-600 font-bold hover:underline cursor-pointer">Gestionar pagos</button>
+            <button onClick={() => onNavigate?.('payments')} className="text-xs text-blue-600 font-bold px-3 py-2 rounded-lg hover:bg-blue-50 cursor-pointer">Gestionar pagos</button>
           </div>
           <ul className="divide-y divide-slate-150 max-h-72 overflow-y-auto">
             {pendingPayments.length === 0 ? (

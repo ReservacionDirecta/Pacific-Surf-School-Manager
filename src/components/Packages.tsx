@@ -153,10 +153,10 @@ export default function Packages() {
                 
                 <button 
                   onClick={() => handleOpenEdit(pkg)}
-                  className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-blue-600 transition cursor-pointer"
+                  className="p-2.5 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-blue-600 transition cursor-pointer"
                   title="Editar paquete"
                 >
-                  <Edit className="w-4.5 h-4.5" />
+                  <Edit className="w-4 h-4" />
                 </button>
               </div>
 
@@ -196,7 +196,7 @@ export default function Packages() {
               </h3>
               <button 
                 onClick={handleCloseModal}
-                className="p-1 rounded-lg text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition"
+                className="p-2 rounded-lg text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -259,17 +259,17 @@ export default function Packages() {
                 </div>
               </div>
               
-              <div className="flex justify-end space-x-3 pt-4 border-t border-slate-100">
+              <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 pt-4 border-t border-slate-100">
                 <button 
                   type="button" 
                   onClick={handleCloseModal} 
-                  className="px-4 py-2 border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 text-sm font-semibold cursor-pointer transition"
+                  className="px-4 py-2.5 border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 text-sm font-semibold cursor-pointer transition w-full sm:w-auto"
                 >
                   Cancelar
                 </button>
                 <button 
                   type="submit" 
-                  className="px-5 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-bold rounded-xl text-sm shadow-md cursor-pointer transition active:scale-98"
+                  className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-bold rounded-xl text-sm shadow-md cursor-pointer transition active:scale-98 w-full sm:w-auto"
                 >
                   {editingPackage ? 'Guardar Cambios' : 'Registrar Paquete'}
                 </button>

@@ -444,7 +444,7 @@ export default function StudentDossierModal({ student, isOpen, onClose, onDataCh
         animate={{ x: 0 }}
         exit={{ x: '100%' }}
         transition={{ type: 'tween', duration: 0.35 }}
-        className="relative bg-white w-full max-w-2xl h-screen flex flex-col justify-between shadow-2xl border-l border-slate-200 z-10 overflow-hidden"
+        className="relative bg-white w-full max-w-2xl h-screen flex flex-col justify-between shadow-2xl border-l border-slate-200 z-10"
       >
         
         {/* PANEL HEADER WITH STUDENT SUMMARY */}
@@ -453,7 +453,7 @@ export default function StudentDossierModal({ student, isOpen, onClose, onDataCh
           
           <button 
             onClick={onClose}
-            className="absolute top-5 right-5 p-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white transition cursor-pointer"
+            className="absolute top-5 right-5 p-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white transition cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -470,11 +470,11 @@ export default function StudentDossierModal({ student, isOpen, onClose, onDataCh
               </div>
               
               {/* Profile Shortcut actions */}
-              <div className="flex items-center gap-2 pt-2">
+              <div className="flex flex-wrap items-center gap-2 pt-2">
                 {student.phone && (
                   <a 
                     href={`tel:${student.phone}`}
-                    className="p-1.5 bg-white/10 hover:bg-white/20 text-white rounded-lg text-xs font-semibold flex items-center gap-1 transition"
+                    className="p-2.5 bg-white/10 hover:bg-white/20 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition"
                     title="Llamar"
                   >
                     <Phone className="w-3.5 h-3.5 text-cyan-400" />
@@ -486,7 +486,7 @@ export default function StudentDossierModal({ student, isOpen, onClose, onDataCh
                     href={getWhatsAppLink(student.phone)}
                     target="_blank" 
                     rel="noreferrer"
-                    className="p-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold flex items-center gap-1 transition"
+                    className="p-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition"
                     title="Mensaje Whatsapp / Recordatorios"
                   >
                     <MessageSquare className="w-3.5 h-3.5 text-emerald-100" />
@@ -496,10 +496,10 @@ export default function StudentDossierModal({ student, isOpen, onClose, onDataCh
                 {student.email && (
                   <a 
                     href={`mailto:${student.email}`}
-                    className="p-1.5 bg-white/10 hover:bg-white/20 text-white rounded-lg text-xs font-semibold flex items-center gap-1 transition"
+                    className="p-2.5 bg-white/10 hover:bg-white/20 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition min-w-0"
                     title="Enviar Correo"
                   >
-                    <Mail className="w-3.5 h-3.5 text-cyan-400" />
+                    <Mail className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
                     <span className="truncate max-w-[120px]">{student.email}</span>
                   </a>
                 )}
@@ -508,31 +508,31 @@ export default function StudentDossierModal({ student, isOpen, onClose, onDataCh
           </div>
 
           {/* Tab Selection Row */}
-          <div className="flex border-b border-white/10 mt-6 text-xs font-bold gap-4 select-none">
+          <div className="flex border-b border-white/10 mt-6 text-xs font-bold gap-4 select-none overflow-x-auto">
             <button 
               onClick={() => setActiveTab('summary')}
-              className={`pb-2 outline-none transition cursor-pointer relative ${activeTab === 'summary' ? 'text-cyan-400' : 'text-slate-400 hover:text-white'}`}
+              className={`py-2.5 outline-none transition cursor-pointer relative ${activeTab === 'summary' ? 'text-cyan-400' : 'text-slate-400 hover:text-white'}`}
             >
               Ficha Resumen
               {activeTab === 'summary' && <span className="absolute bottom-0 left-0 w-full h-0.5 bg-cyan-400 rounded-full"></span>}
             </button>
             <button 
               onClick={() => setActiveTab('packages')}
-              className={`pb-2 outline-none transition cursor-pointer relative flex items-center gap-1 ${activeTab === 'packages' ? 'text-cyan-400' : 'text-slate-400 hover:text-white'}`}
+              className={`py-2.5 outline-none transition cursor-pointer relative flex items-center gap-1 ${activeTab === 'packages' ? 'text-cyan-400' : 'text-slate-400 hover:text-white'}`}
             >
               Matrículas ({studentPackages.length})
               {activeTab === 'packages' && <span className="absolute bottom-0 left-0 w-full h-0.5 bg-cyan-400 rounded-full"></span>}
             </button>
             <button 
               onClick={() => setActiveTab('classes')}
-              className={`pb-2 outline-none transition cursor-pointer relative flex items-center gap-1 ${activeTab === 'classes' ? 'text-cyan-400' : 'text-slate-400 hover:text-white'}`}
+              className={`py-2.5 outline-none transition cursor-pointer relative flex items-center gap-1 ${activeTab === 'classes' ? 'text-cyan-400' : 'text-slate-400 hover:text-white'}`}
             >
               Historial de Clases ({classes.length})
               {activeTab === 'classes' && <span className="absolute bottom-0 left-0 w-full h-0.5 bg-cyan-400 rounded-full"></span>}
             </button>
             <button 
               onClick={() => setActiveTab('payments')}
-              className={`pb-2 outline-none transition cursor-pointer relative flex items-center gap-1 ${activeTab === 'payments' ? 'text-cyan-400' : 'text-slate-400 hover:text-white'}`}
+              className={`py-2.5 outline-none transition cursor-pointer relative flex items-center gap-1 ${activeTab === 'payments' ? 'text-cyan-400' : 'text-slate-400 hover:text-white'}`}
             >
               Caja / Pagos Recibidos
               {activeTab === 'payments' && <span className="absolute bottom-0 left-0 w-full h-0.5 bg-cyan-400 rounded-full"></span>}
@@ -606,7 +606,7 @@ export default function StudentDossierModal({ student, isOpen, onClose, onDataCh
                                 setScoringPaymentSpId(activePackage.id!);
                                 setActiveTab('packages');
                               }}
-                              className="bg-rose-600 hover:bg-rose-500 text-white text-[11px] font-bold px-3 py-1.5 rounded-lg shadow-sm transition active:scale-95 shrink-0"
+                              className="bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold px-4 py-2.5 rounded-lg shadow-sm transition active:scale-95 shrink-0"
                             >
                               💵 Abonar Saldo
                             </button>
@@ -683,7 +683,7 @@ export default function StudentDossierModal({ student, isOpen, onClose, onDataCh
                               <p className="font-bold text-slate-900">{format(parseISO(cls.date), 'dd/MM/yyyy HH:mm')} hrs</p>
                               <p className="text-slate-450 mt-0.5">Coach: {coach}</p>
                             </div>
-                            <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider font-mono ${
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider font-mono ${
                               cls.status === 'scheduled' ? 'bg-cyan-50 border border-cyan-100 text-cyan-800' :
                               cls.status === 'completed' ? 'bg-emerald-50 border border-emerald-100 text-emerald-800' : 
                               'bg-rose-50 border border-rose-100 text-rose-800'
@@ -811,7 +811,7 @@ export default function StudentDossierModal({ student, isOpen, onClose, onDataCh
                                 <span className="font-bold text-emerald-600">PAGADO: S/. {sp.amountPaid}</span>
                               </div>
                             </div>
-                            <span className={`px-2 py-0.5 text-[9px] rounded-lg font-bold uppercase tracking-wider font-mono
+                            <span className={`px-2 py-0.5 text-[10px] rounded-lg font-bold uppercase tracking-wider font-mono
                               ${sp.status === 'active' ? 'bg-cyan-50 text-cyan-800 border border-cyan-100' : 
                                 sp.status === 'exhausted' ? 'bg-slate-100 text-slate-650' : 'bg-red-50 text-red-800'}`}>
                               {sp.status === 'active' ? 'Sesión Activa' : sp.status === 'exhausted' ? 'Agotado' : 'Expirado'}
@@ -834,7 +834,7 @@ export default function StudentDossierModal({ student, isOpen, onClose, onDataCh
                             {hasRep ? (
                               <div className="text-slate-650 font-medium">
                                 Deuda: <strong className="text-red-650 font-mono text-sm leading-none">S/. {balance}</strong>
-                                {sp.paymentDueDate && <span className="block text-[9px] text-slate-400 font-mono">Vence: {sp.paymentDueDate}</span>}
+                                {sp.paymentDueDate && <span className="block text-[10px] text-slate-400 font-mono">Vence: {sp.paymentDueDate}</span>}
                               </div>
                             ) : (
                               <span className="text-emerald-600 font-extrabold flex items-center gap-1">
@@ -1063,9 +1063,9 @@ export default function StudentDossierModal({ student, isOpen, onClose, onDataCh
                   )}
 
                   {/* List of classes for this surfer */}
-                  <div className="bg-white rounded-2xl border border-slate-150 overflow-hidden shadow-xs">
+                  <div className="bg-white rounded-2xl border border-slate-150 overflow-x-auto shadow-xs">
                     <table className="min-w-full divide-y divide-slate-150">
-                      <thead className="bg-slate-50 text-slate-450 font-bold uppercase tracking-widest text-[9px] font-mono">
+                      <thead className="bg-slate-50 text-slate-450 font-bold uppercase tracking-widest text-[10px] font-mono">
                         <tr>
                           <th className="px-5 py-2.5 text-left">Horario / Fecha</th>
                           <th className="px-5 py-2.5 text-left">Instructor</th>
@@ -1105,22 +1105,22 @@ export default function StudentDossierModal({ student, isOpen, onClose, onDataCh
                                 <td className="px-5 py-3 whitespace-nowrap text-slate-400 text-[10px]">
                                   {cls.status === 'scheduled' ? 'Agendada' : cls.status === 'completed' ? 'Completada' : 'Cancelada'}
                                 </td>
-                                <td className="px-5 py-3 whitespace-nowrap text-center">
-                                  <button
-                                    onClick={handleSaveClass}
-                                    className="text-emerald-600 hover:text-emerald-800 font-bold text-[10px] px-2 py-1 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition"
-                                  >
-                                    Guardar
-                                  </button>
-                                </td>
-                                <td className="px-5 py-3 whitespace-nowrap text-right">
-                                  <button
-                                    onClick={() => setEditClassId(null)}
-                                    className="text-slate-400 hover:text-slate-600 p-1 rounded-md"
-                                  >
-                                    <X className="w-3.5 h-3.5" />
-                                  </button>
-                                </td>
+                              <td className="px-5 py-3 whitespace-nowrap text-center">
+                                <button
+                                  onClick={handleSaveClass}
+                                  className="text-emerald-600 hover:text-emerald-800 font-bold text-xs px-3 py-2 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition"
+                                >
+                                  Guardar
+                                </button>
+                              </td>
+                              <td className="px-5 py-3 whitespace-nowrap text-right">
+                                <button
+                                  onClick={() => setEditClassId(null)}
+                                  className="text-slate-400 hover:text-slate-600 p-2 rounded-md"
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
+                              </td>
                               </tr>
                             );
                           }
@@ -1147,18 +1147,18 @@ export default function StudentDossierModal({ student, isOpen, onClose, onDataCh
                               <td className="px-5 py-3 whitespace-nowrap text-center">
                                 <button 
                                   onClick={() => handleEditClass(cls)}
-                                  className="text-blue-400 hover:text-blue-600 p-1 rounded-md"
+                                  className="text-blue-400 hover:text-blue-600 p-2 rounded-md"
                                   title="Editar fecha y instructor"
                                 >
-                                  <Pencil className="w-3.5 h-3.5" />
+                                  <Pencil className="w-4 h-4" />
                                 </button>
                               </td>
                               <td className="px-5 py-3 whitespace-nowrap text-right">
                                 <button 
                                   onClick={() => handleDeleteClassRecord(cls)}
-                                  className="text-red-400 hover:text-red-600 p-1 rounded-md"
+                                  className="text-red-400 hover:text-red-600 p-2 rounded-md"
                                 >
-                                  <Trash2 className="w-3.5 h-3.5" />
+                                  <Trash2 className="w-4 h-4" />
                                 </button>
                               </td>
                             </tr>
@@ -1188,16 +1188,16 @@ export default function StudentDossierModal({ student, isOpen, onClose, onDataCh
                     </div>
                   </div>
 
-                  <div className="bg-white rounded-2xl border border-slate-150 overflow-hidden shadow-xs">
+                  <div className="bg-white rounded-2xl border border-slate-150 overflow-x-auto shadow-xs">
                     <table className="min-w-full divide-y divide-slate-150">
-                      <thead className="bg-slate-50 text-slate-450 font-bold uppercase tracking-widest text-[9px] font-mono">
+                      <thead className="bg-slate-50 text-slate-450 font-bold uppercase tracking-widest text-[10px] font-mono">
                         <tr>
-                          <th className="px-5 py-2.5 text-left">Fecha Registro</th>
-                          <th className="px-5 py-2.5 text-left">Concepto / Plan</th>
-                          <th className="px-5 py-2.5 text-left">Método</th>
-                          <th className="px-5 py-2.5 text-left">Monto Recibido</th>
-                          <th className="px-5 py-2.5 text-center">Editar</th>
-                          <th className="px-5 py-2.5 text-right">Anular</th>
+                          <th className="px-5 py-2.5 text-left whitespace-nowrap">Fecha Registro</th>
+                          <th className="px-5 py-2.5 text-left whitespace-nowrap">Concepto / Plan</th>
+                          <th className="px-5 py-2.5 text-left whitespace-nowrap">Método</th>
+                          <th className="px-5 py-2.5 text-left whitespace-nowrap">Monto Recibido</th>
+                          <th className="px-5 py-2.5 text-center whitespace-nowrap">Editar</th>
+                          <th className="px-5 py-2.5 text-right whitespace-nowrap">Anular</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-150 text-slate-705">
@@ -1247,12 +1247,12 @@ export default function StudentDossierModal({ student, isOpen, onClose, onDataCh
                                       onChange={e => /^\d*\.?\d*$/.test(e.target.value) && setEditPayAmount(e.target.value)}
                                       className="border border-slate-200 rounded-lg p-1 text-[10px] w-20 font-bold"
                                     />
-                                    {editPayError && <span className="block text-red-500 text-[8px] font-bold">{editPayError}</span>}
+                                    {editPayError && <span className="block text-red-500 text-[10px] font-bold">{editPayError}</span>}
                                   </td>
                                   <td className="px-5 py-3 whitespace-nowrap text-center">
                                     <button
                                       onClick={handleSavePayment}
-                                      className="text-emerald-600 hover:text-emerald-800 font-bold text-[10px] px-2 py-1 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition"
+                                      className="text-emerald-600 hover:text-emerald-800 font-bold text-xs px-3 py-2 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition"
                                     >
                                       Guardar
                                     </button>
@@ -1260,9 +1260,9 @@ export default function StudentDossierModal({ student, isOpen, onClose, onDataCh
                                   <td className="px-5 py-3 whitespace-nowrap text-right">
                                     <button
                                       onClick={() => setEditPaymentId(null)}
-                                      className="text-slate-400 hover:text-slate-600 p-1 rounded-md"
+                                      className="text-slate-400 hover:text-slate-600 p-2 rounded-md"
                                     >
-                                      <X className="w-3.5 h-3.5" />
+                                      <X className="w-4 h-4" />
                                     </button>
                                   </td>
                                 </tr>
@@ -1276,10 +1276,10 @@ export default function StudentDossierModal({ student, isOpen, onClose, onDataCh
                                 </td>
                                 <td className="px-5 py-3 text-slate-900 font-bold truncate max-w-[130px]" title={refSpName}>
                                   {refSpName}
-                                  {p.notes && <span className="block font-normal text-[9px] text-slate-400 italic font-sans">{p.notes}</span>}
+                                    {p.notes && <span className="block font-normal text-[10px] text-slate-400 italic font-sans">{p.notes}</span>}
                                 </td>
                                 <td className="px-5 py-3 whitespace-nowrap">
-                                  <span className={`px-2 py-0.5 mt-1 rounded text-[9px] font-bold uppercase font-mono tracking-wide
+                                  <span className={`px-2 py-0.5 mt-1 rounded text-[10px] font-bold uppercase font-mono tracking-wide
                                     ${p.method === 'Efectivo' ? 'bg-emerald-55/60 text-emerald-800' : 
                                       p.method === 'Yape' ? 'bg-purple-100 text-purple-800' : 
                                       p.method === 'Plin' ? 'bg-cyan-100 text-cyan-800' : 
@@ -1293,18 +1293,18 @@ export default function StudentDossierModal({ student, isOpen, onClose, onDataCh
                                 <td className="px-5 py-3 whitespace-nowrap text-center">
                                   <button 
                                     onClick={() => handleEditPayment(p)}
-                                    className="text-blue-400 hover:text-blue-600 p-1 rounded-md"
+                                    className="text-blue-400 hover:text-blue-600 p-2 rounded-md"
                                     title="Editar pago"
                                   >
-                                    <Pencil className="w-3.5 h-3.5" />
+                                    <Pencil className="w-4 h-4" />
                                   </button>
                                 </td>
                                 <td className="px-5 py-3 whitespace-nowrap text-right">
                                   <button 
                                     onClick={() => handleDeletePaymentRow(p.id!, p.studentPackageId, p.amount)}
-                                    className="text-red-400 hover:text-red-650 p-1 rounded-md"
+                                    className="text-red-400 hover:text-red-650 p-2 rounded-md"
                                   >
-                                    <Trash2 className="w-3.5 h-3.5" />
+                                    <Trash2 className="w-4 h-4" />
                                   </button>
                                 </td>
                               </tr>

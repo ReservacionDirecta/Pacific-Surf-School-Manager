@@ -272,7 +272,7 @@ export default function Payments({ onNavigate }: { onNavigate?: (view: string) =
         <div className="flex items-center gap-2.5 w-full sm:w-auto relative z-10">
           <button 
             onClick={() => setShowAssignModal(true)}
-            className="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-extrabold px-5 py-2.5 rounded-xl shadow-lg cursor-pointer transition flex items-center gap-1.5 text-xs active:scale-98"
+            className="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-extrabold px-5 py-3 rounded-xl shadow-lg cursor-pointer transition flex items-center gap-1.5 text-xs active:scale-98"
           >
             <Plus className="w-4 h-4" />
             Asignar / Renovar Plan
@@ -280,7 +280,7 @@ export default function Payments({ onNavigate }: { onNavigate?: (view: string) =
           
           <button 
             onClick={fetchData}
-            className="p-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 text-slate-300 hover:text-white rounded-xl transition cursor-pointer"
+            className="p-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 text-slate-300 hover:text-white rounded-xl transition cursor-pointer"
             title="Refrescar caja"
           >
             <RotateCw className="w-4 h-4 shrink-0" />
@@ -312,21 +312,21 @@ export default function Payments({ onNavigate }: { onNavigate?: (view: string) =
 
         <div className="bg-white p-5 rounded-2xl border border-slate-150 col-span-1 md:col-span-2">
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block font-mono mb-2.5">Recaudación por Método</span>
-          <div className="grid grid-cols-4 gap-2 text-center">
-            <div className="bg-emerald-50/50 p-2 rounded-xl border border-emerald-100">
-              <span className="text-[9px] text-emerald-800 font-bold block uppercase tracking-wide">Efectivo</span>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
+            <div className="bg-emerald-50/50 p-2.5 rounded-xl border border-emerald-100">
+              <span className="text-[10px] text-emerald-800 font-bold block uppercase tracking-wide">Efectivo</span>
               <span className="text-xs font-bold text-slate-900 mt-0.5 block font-mono">S/. {collectedByMethod['Efectivo'] || 0}</span>
             </div>
-            <div className="bg-blue-50/50 p-2 rounded-xl border border-blue-100">
-              <span className="text-[9px] text-blue-805 font-bold block uppercase tracking-wide">Banco</span>
+            <div className="bg-blue-50/50 p-2.5 rounded-xl border border-blue-100">
+              <span className="text-[10px] text-blue-805 font-bold block uppercase tracking-wide">Banco</span>
               <span className="text-xs font-bold text-slate-900 mt-0.5 block font-mono">S/. {collectedByMethod['Transferencia'] || 0}</span>
             </div>
-            <div className="bg-purple-50/50 p-2 rounded-xl border border-purple-100">
-              <span className="text-[9px] text-purple-800 font-bold block uppercase tracking-wide">Yape</span>
+            <div className="bg-purple-50/50 p-2.5 rounded-xl border border-purple-100">
+              <span className="text-[10px] text-purple-800 font-bold block uppercase tracking-wide">Yape</span>
               <span className="text-xs font-bold text-slate-900 mt-0.5 block font-mono">S/. {collectedByMethod['Yape'] || 0}</span>
             </div>
-            <div className="bg-cyan-50/50 p-2 rounded-xl border border-cyan-100">
-              <span className="text-[9px] text-cyan-800 font-bold block uppercase tracking-wide">Plin</span>
+            <div className="bg-cyan-50/50 p-2.5 rounded-xl border border-cyan-100">
+              <span className="text-[10px] text-cyan-800 font-bold block uppercase tracking-wide">Plin</span>
               <span className="text-xs font-bold text-slate-900 mt-0.5 block font-mono">S/. {collectedByMethod['Plin'] || 0}</span>
             </div>
           </div>
@@ -678,7 +678,7 @@ export default function Payments({ onNavigate }: { onNavigate?: (view: string) =
                         <td className="px-4 py-3 font-mono text-[11px]">{format(parseISO(p.date), 'dd/MM/yyyy HH:mm')}</td>
                         <td className="px-4 py-3 font-bold text-slate-900 font-mono">S/. {p.amount}</td>
                         <td className="px-4 py-3">
-                          <span className={`px-2 py-0.5 rounded-lg text-[9px] font-bold uppercase font-mono tracking-wide
+                          <span className={`px-2 py-0.5 rounded-lg text-[10px] font-bold uppercase font-mono tracking-wide
                             ${p.method === 'Efectivo' ? 'bg-emerald-55/60 text-emerald-800' : 
                               p.method === 'Yape' ? 'bg-purple-100 text-purple-800' : 
                               p.method === 'Plin' ? 'bg-cyan-100 text-cyan-800' : 

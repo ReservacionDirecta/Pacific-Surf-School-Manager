@@ -190,21 +190,23 @@ export default function Instructors() {
                     <span className="text-slate-400 italic text-xs">-</span>
                   )}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-bold space-x-3">
-                  <button 
-                    onClick={() => handleEditClick(instructor)}
-                    className="text-blue-600 hover:text-blue-700 transition cursor-pointer inline-flex items-center gap-1 hover:underline"
-                  >
-                    <Edit className="w-3.5 h-3.5" />
-                    Editar
-                  </button>
-                  <button 
-                    onClick={() => handleDeleteInstructor(instructor.id!)}
-                    className="text-red-500 hover:text-red-650 transition cursor-pointer inline-flex items-center gap-1 hover:underline"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    Eliminar
-                  </button>
+                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-bold">
+                  <div className="flex flex-col sm:flex-row items-end sm:items-center gap-1.5 sm:gap-2">
+                    <button 
+                      onClick={() => handleEditClick(instructor)}
+                      className="text-blue-600 hover:text-blue-700 transition cursor-pointer inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-blue-50/50 hover:bg-blue-50 border border-blue-200 w-full sm:w-auto justify-center"
+                    >
+                      <Edit className="w-4 h-4" />
+                      Editar
+                    </button>
+                    <button 
+                      onClick={() => handleDeleteInstructor(instructor.id!)}
+                      className="text-red-500 hover:text-red-650 transition cursor-pointer inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-red-50/40 hover:bg-red-50 border border-red-200 w-full sm:w-auto justify-center"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      Eliminar
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -232,7 +234,7 @@ export default function Instructors() {
               </h3>
               <button 
                 onClick={() => setShowAddModal(false)}
-                className="p-1 rounded-lg text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition"
+                className="p-2 rounded-lg text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -273,17 +275,17 @@ export default function Instructors() {
                 />
               </div>
 
-              <div className="flex justify-end space-x-3 pt-4 border-t border-slate-100">
+              <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 pt-4 border-t border-slate-100">
                 <button 
                   type="button" 
                   onClick={() => setShowAddModal(false)} 
-                  className="px-4 py-2 border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 text-sm font-semibold cursor-pointer transition"
+                  className="px-4 py-2.5 border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 text-sm font-semibold cursor-pointer transition w-full sm:w-auto"
                 >
                   Cancelar
                 </button>
                 <button 
                   type="submit" 
-                  className="px-5 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-bold rounded-xl text-sm shadow-md cursor-pointer transition active:scale-98"
+                  className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-bold rounded-xl text-sm shadow-md cursor-pointer transition active:scale-98 w-full sm:w-auto"
                 >
                   {editingInstructor ? 'Guardar Cambios' : 'Registrar Coach'}
                 </button>
