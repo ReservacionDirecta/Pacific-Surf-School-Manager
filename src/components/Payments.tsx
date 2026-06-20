@@ -17,7 +17,7 @@ import {
   Save
 } from 'lucide-react';
 import { StudentPackage, Student, Payment, Package } from '../types';
-import { getStudents, getStudentPackages, updateStudentPackage, addPayment, getPayments, deletePayment, addStudentPackage, getPackages } from '../services/db';
+import { getStudents, getStudentPackages, updateStudentPackage, addPayment, getPayments, deletePayment, deleteStudentPackage, addStudentPackage, getPackages } from '../services/db';
 import { format, parseISO, isBefore } from 'date-fns';
 
 export default function Payments({ onNavigate }: { onNavigate?: (view: string) => void }) {
@@ -261,6 +261,22 @@ export default function Payments({ onNavigate }: { onNavigate?: (view: string) =
     }
   };
 
+  const handleDeletePackage = async (sp: StudentPackage) => {
+    const studentName = students[sp.studentId]?.name || 'este alumno';
+    if (!window.confirm(`¿Eliminar el plan "${sp.packageName}" de ${studentName}? También se eliminarán todos los pagos registrados de este plan.`)) return;
+    try {
+      const relatedPayments = payments.filter(p => p.studentPackageId === sp.id);
+      for (const p of relatedPayments) {
+        await deletePayment(p.id!);
+      }
+      await deleteStudentPackage(sp.id!);
+      await fetchData();
+    } catch (error) {
+      console.error("Error deleting student package:", error);
+      alert("Error al eliminar el plan");
+    }
+  };
+
   const handleOpenEditDetails = (sp: StudentPackage) => {
     setEditingDetails(sp);
     setEditPackageName(sp.packageName || '');
@@ -481,6 +497,13 @@ export default function Payments({ onNavigate }: { onNavigate?: (view: string) =
                       >
                         <Eye className="w-3 h-3" />
                         Historial
+                      </button>
+                      <button 
+                        onClick={() => handleDeletePackage(sp)}
+                        className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-[10px] font-bold transition cursor-pointer border border-red-200"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        Eliminar
                       </button>
                     </div>
                   </td>
