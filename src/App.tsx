@@ -21,7 +21,9 @@ import {
   Mail,
   User as UserIcon,
   ArrowLeft,
-  ClipboardList
+  ClipboardList,
+  Settings,
+  ChevronDown
 } from 'lucide-react';
 
 import Dashboard from './components/Dashboard';
@@ -44,6 +46,11 @@ export default function App() {
   const [isRegistering, setIsRegistering] = useState(false);
   const [authError, setAuthError] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({});
+
+  const toggleMenu = (id: string) => {
+    setExpandedMenus(prev => ({ ...prev, [id]: !prev[id] }));
+  };
 
   const navigateTo = useCallback((next: string) => {
     setViewHistory(prev => [view, ...prev]);
@@ -96,7 +103,7 @@ export default function App() {
     localStorage.removeItem('surf_user');
   };
 
-  // Sidebar navigation menu items
+  // Sidebar navigation menu items with nested sub-items
   const menuItems = [
     { id: 'dashboard', name: 'Panel Principal', icon: LayoutDashboard },
     { id: 'students', name: 'Alumnos', icon: Users },
@@ -104,9 +111,16 @@ export default function App() {
     { id: 'packages', name: 'Planes', icon: PackageIcon },
     { id: 'classes', name: 'Clases', icon: Calendar },
     { id: 'payments', name: 'Cobranza', icon: Wallet },
-    { id: 'sheets', name: 'Sincronizar', icon: RefreshCw },
-    { id: 'import', name: 'Importar', icon: Upload },
     { id: 'equipment', name: 'Equipamiento', icon: ClipboardList },
+    {
+      id: 'config',
+      name: 'Configuración',
+      icon: Settings,
+      subItems: [
+        { id: 'sheets', name: 'Sincronizar', icon: RefreshCw },
+        { id: 'import', name: 'Importar', icon: Upload },
+      ]
+    },
   ];
 
   if (loading) {
@@ -211,12 +225,9 @@ export default function App() {
     );
   }
 
-  const currentMenuItem = menuItems.find(m => m.id === view);
-  const currentPageName = currentMenuItem?.name || 'Dashboard';
-
   return (
     <div className="min-h-screen bg-[#f8fafc] text-slate-800 font-sans flex flex-col">
-      {/* FIXED TOP NAVBAR */}
+      {/* FIXED TOP NAVBAR — minimal: logo + user controls only */}
       <header className="fixed top-0 left-0 right-0 z-50 h-16 bg-slate-900 text-white border-b border-slate-800 shadow-md flex items-center justify-between px-4 lg:px-6">
         <div className="flex items-center gap-3">
           {view !== 'dashboard' && (
@@ -232,25 +243,6 @@ export default function App() {
           </button>
         </div>
 
-        {/* Desktop nav links */}
-        <nav className="hidden lg:flex items-center gap-1">
-          {menuItems.map(item => {
-            const Icon = item.icon;
-            const active = view === item.id;
-            return (
-              <button key={item.id} onClick={() => navigateTo(item.id)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-all ${
-                  active ? 'bg-blue-600/20 text-cyan-300' : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                }`}
-              >
-                <Icon className="w-3.5 h-3.5" />
-                {item.name}
-              </button>
-            );
-          })}
-        </nav>
-
-        {/* User & Mobile menu */}
         <div className="flex items-center gap-3">
           <div className="hidden sm:flex items-center gap-2.5 text-xs text-slate-400">
             <UserIcon className="w-3.5 h-3.5" />
@@ -271,6 +263,45 @@ export default function App() {
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
           {menuItems.map(item => {
             const Icon = item.icon;
+            if (item.subItems) {
+              const isExpanded = expandedMenus[item.id];
+              const isChildActive = item.subItems.some(s => view === s.id);
+              return (
+                <div key={item.id}>
+                  <button onClick={() => toggleMenu(item.id)}
+                    className={`w-full flex items-center gap-3.5 px-4 py-3 rounded-lg text-sm font-semibold cursor-pointer tracking-wide transition-all duration-200 ${
+                      isChildActive
+                        ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-md shadow-blue-900/25 border-l-4 border-cyan-400'
+                        : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                    }`}
+                  >
+                    <Icon className={`w-4 h-4 shrink-0 transition-transform ${isChildActive ? 'scale-110' : ''}`} />
+                    {item.name}
+                    <ChevronDown className={`w-3.5 h-3.5 ml-auto transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                  </button>
+                  {isExpanded && (
+                    <div className="ml-4 mt-1 space-y-0.5 border-l-2 border-slate-700 pl-3">
+                      {item.subItems.map(sub => {
+                        const SubIcon = sub.icon;
+                        const subActive = view === sub.id;
+                        return (
+                          <button key={sub.id} onClick={() => navigateTo(sub.id)}
+                            className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-semibold cursor-pointer tracking-wide transition-all duration-200 ${
+                              subActive
+                                ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-md shadow-blue-900/25'
+                                : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                            }`}
+                          >
+                            <SubIcon className="w-4 h-4 shrink-0" />
+                            {sub.name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            }
             const active = view === item.id;
             return (
               <button key={item.id} onClick={() => navigateTo(item.id)}
@@ -323,6 +354,41 @@ export default function App() {
               <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
                 {menuItems.map(item => {
                   const Icon = item.icon;
+                  if (item.subItems) {
+                    const isExpanded = expandedMenus[item.id];
+                    const isChildActive = item.subItems.some(s => view === s.id);
+                    return (
+                      <div key={item.id}>
+                        <button onClick={() => toggleMenu(item.id)}
+                          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-bold transition-all duration-150 ${
+                            isChildActive ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:bg-slate-850 hover:text-white'
+                          }`}
+                        >
+                          <Icon className="w-4.5 h-4.5" />
+                          {item.name}
+                          <ChevronDown className={`w-3.5 h-3.5 ml-auto transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                        </button>
+                        {isExpanded && (
+                          <div className="ml-3 mt-0.5 space-y-0.5 border-l-2 border-slate-800 pl-3">
+                            {item.subItems.map(sub => {
+                              const SubIcon = sub.icon;
+                              const subActive = view === sub.id;
+                              return (
+                                <button key={sub.id} onClick={() => { navigateTo(sub.id); setSidebarOpen(false); }}
+                                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-bold transition-all duration-150 ${
+                                    subActive ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:bg-slate-850 hover:text-white'
+                                  }`}
+                                >
+                                  <SubIcon className="w-4 h-4" />
+                                  {sub.name}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  }
                   const active = view === item.id;
                   return (
                     <button key={item.id} onClick={() => { navigateTo(item.id); setSidebarOpen(false); }}
