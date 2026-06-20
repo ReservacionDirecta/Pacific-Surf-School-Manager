@@ -12,7 +12,9 @@ import {
   ArrowUp,
   ArrowDown,
   Eye,
-  CreditCard
+  CreditCard,
+  Pencil,
+  Save
 } from 'lucide-react';
 import { StudentPackage, Student, Payment, Package } from '../types';
 import { getStudents, getStudentPackages, updateStudentPackage, addPayment, getPayments, deletePayment, addStudentPackage, getPackages } from '../services/db';
@@ -45,6 +47,16 @@ export default function Payments({ onNavigate }: { onNavigate?: (view: string) =
   const [assignAmountPaid, setAssignAmountPaid] = useState('');
   const [assignNotes, setAssignNotes] = useState('');
   const [assignDueDate, setAssignDueDate] = useState('');
+
+  // Edit cobranza details modal
+  const [editingDetails, setEditingDetails] = useState<StudentPackage | null>(null);
+  const [editPackageName, setEditPackageName] = useState('');
+  const [editTotalPrice, setEditTotalPrice] = useState('');
+  const [editAmountPaid, setEditAmountPaid] = useState('');
+  const [editTotalClasses, setEditTotalClasses] = useState('');
+  const [editClassesUsed, setEditClassesUsed] = useState('');
+  const [editDueDate, setEditDueDate] = useState('');
+  const [editStatus, setEditStatus] = useState<'active' | 'exhausted' | 'expired'>('active');
 
   const fetchData = async () => {
     setLoading(true);
@@ -249,6 +261,39 @@ export default function Payments({ onNavigate }: { onNavigate?: (view: string) =
     }
   };
 
+  const handleOpenEditDetails = (sp: StudentPackage) => {
+    setEditingDetails(sp);
+    setEditPackageName(sp.packageName || '');
+    setEditTotalPrice(String(sp.totalPrice));
+    setEditAmountPaid(String(sp.amountPaid));
+    setEditTotalClasses(String(sp.totalClasses));
+    setEditClassesUsed(String(sp.classesUsed));
+    setEditDueDate(sp.paymentDueDate || '');
+    setEditStatus(sp.status);
+  };
+
+  const handleSaveDetails = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingDetails?.id) return;
+
+    try {
+      await updateStudentPackage(editingDetails.id, {
+        packageName: editPackageName,
+        totalPrice: Number(editTotalPrice),
+        amountPaid: Number(editAmountPaid),
+        totalClasses: Number(editTotalClasses),
+        classesUsed: Number(editClassesUsed),
+        paymentDueDate: editDueDate,
+        status: editStatus,
+      });
+      setEditingDetails(null);
+      await fetchData();
+    } catch (error) {
+      console.error("Error saving cobranza details:", error);
+      alert("Error al guardar los cambios");
+    }
+  };
+
   const SortIcon = ({ col }: { col: string }) => {
     if (sortKey !== col) return <ArrowUpDown className="w-3 h-3 ml-1 inline-block opacity-30" />;
     return sortDir === 'asc'
@@ -414,21 +459,30 @@ export default function Payments({ onNavigate }: { onNavigate?: (view: string) =
                       <span className="text-slate-400 italic text-xs">-</span>
                     )}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-bold space-x-2">
-                    <button 
-                      onClick={() => setEditingPayment(sp)}
-                      className="inline-flex items-center gap-1 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg text-xs font-bold transition cursor-pointer border border-emerald-200"
-                    >
-                      <CreditCard className="w-3.5 h-3.5" />
-                      Abonar
-                    </button>
-                    <button 
-                      onClick={() => setShowHistory(sp.id!)}
-                      className="inline-flex items-center gap-1 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-xs font-bold transition cursor-pointer"
-                    >
-                      <Eye className="w-3.5 h-3.5" />
-                      Historial
-                    </button>
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-bold">
+                    <div className="flex flex-col sm:flex-row items-end sm:items-center gap-1 sm:gap-1.5">
+                      <button 
+                        onClick={() => handleOpenEditDetails(sp)}
+                        className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-lg text-[10px] font-bold transition cursor-pointer border border-amber-200"
+                      >
+                        <Pencil className="w-3 h-3" />
+                        Ajustes
+                      </button>
+                      <button 
+                        onClick={() => setEditingPayment(sp)}
+                        className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg text-[10px] font-bold transition cursor-pointer border border-emerald-200"
+                      >
+                        <CreditCard className="w-3 h-3" />
+                        Abonar
+                      </button>
+                      <button 
+                        onClick={() => setShowHistory(sp.id!)}
+                        className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-[10px] font-bold transition cursor-pointer"
+                      >
+                        <Eye className="w-3 h-3" />
+                        Historial
+                      </button>
+                    </div>
                   </td>
                 </tr>
               );
@@ -714,6 +768,131 @@ export default function Payments({ onNavigate }: { onNavigate?: (view: string) =
                 Cerrar Libreta
               </button>
             </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* EDIT COBRANZA DETAILS MODAL */}
+      {editingDetails && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm border border-slate-100"
+          >
+            <div className="flex justify-between items-center border-b border-slate-100 pb-3.5 mb-4">
+              <h3 className="text-lg font-bold text-slate-900 font-display">Ajustar Detalles de Cobranza</h3>
+              <button 
+                onClick={() => setEditingDetails(null)}
+                className="p-2 rounded-lg text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="text-xs text-slate-600 mb-4 bg-slate-50 border border-slate-150 p-3 rounded-xl">
+              Alumno: <span className="font-bold text-slate-900">{students[editingDetails.studentId]?.name}</span>
+            </div>
+
+            <form onSubmit={handleSaveDetails} className="space-y-3">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Tipo de Paquete</label>
+                <input 
+                  type="text"
+                  value={editPackageName}
+                  onChange={e => setEditPackageName(e.target.value)}
+                  className="mt-1 block w-full rounded-xl border border-slate-200 text-slate-850 px-3.5 py-2.5 text-sm focus:border-cyan-500 outline-none transition"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Precio Total (S/.)</label>
+                  <input 
+                    type="text"
+                    value={editTotalPrice}
+                    onChange={e => /^\d*\.?\d*$/.test(e.target.value) && setEditTotalPrice(e.target.value)}
+                    className="mt-1 block w-full rounded-xl border border-slate-200 text-slate-850 px-3.5 py-2.5 text-sm font-bold focus:border-cyan-500 outline-none transition"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Abonado (S/.)</label>
+                  <input 
+                    type="text"
+                    value={editAmountPaid}
+                    onChange={e => /^\d*\.?\d*$/.test(e.target.value) && setEditAmountPaid(e.target.value)}
+                    className="mt-1 block w-full rounded-xl border border-slate-200 text-slate-850 px-3.5 py-2.5 text-sm font-bold focus:border-cyan-500 outline-none transition"
+                  />
+                </div>
+              </div>
+
+              {Number(editTotalPrice) - Number(editAmountPaid) > 0 && (
+                <div className="bg-rose-50 border border-rose-150 rounded-xl px-3.5 py-2 text-xs text-rose-700 font-bold">
+                  Saldo Deuda: S/. {(Number(editTotalPrice) - Number(editAmountPaid)).toFixed(2)}
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Clases Total</label>
+                  <input 
+                    type="number" min="0"
+                    value={editTotalClasses}
+                    onChange={e => setEditTotalClasses(e.target.value)}
+                    className="mt-1 block w-full rounded-xl border border-slate-200 text-slate-850 px-3.5 py-2.5 text-sm font-bold focus:border-cyan-500 outline-none transition"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Clases Usadas</label>
+                  <input 
+                    type="number" min="0"
+                    value={editClassesUsed}
+                    onChange={e => setEditClassesUsed(e.target.value)}
+                    className="mt-1 block w-full rounded-xl border border-slate-200 text-slate-850 px-3.5 py-2.5 text-sm font-bold focus:border-cyan-500 outline-none transition"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Límite de Pago</label>
+                <input 
+                  type="date"
+                  value={editDueDate}
+                  onChange={e => setEditDueDate(e.target.value)}
+                  className="mt-1 block w-full rounded-xl border border-slate-200 text-slate-850 px-3.5 py-2.5 text-sm focus:border-cyan-500 outline-none transition"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Estado</label>
+                <select
+                  value={editStatus}
+                  onChange={e => setEditStatus(e.target.value as any)}
+                  className="mt-1 block w-full rounded-xl border border-slate-200 text-slate-850 bg-white px-3.5 py-2.5 text-sm focus:border-cyan-500 outline-none transition"
+                >
+                  <option value="active">Activo</option>
+                  <option value="exhausted">Agotado</option>
+                  <option value="expired">Expirado</option>
+                </select>
+              </div>
+
+              <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 pt-4 border-t border-slate-100">
+                <button 
+                  type="button"
+                  onClick={() => setEditingDetails(null)}
+                  className="px-4 py-2.5 border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 text-sm font-semibold cursor-pointer transition w-full sm:w-auto"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  type="submit"
+                  className="inline-flex items-center justify-center gap-1.5 px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold rounded-xl text-xs shadow-lg shadow-amber-500/10 cursor-pointer transition active:scale-98 w-full sm:w-auto"
+                >
+                  <Save className="w-4 h-4" />
+                  Guardar Cambios
+                </button>
+              </div>
+            </form>
           </motion.div>
         </div>
       )}
