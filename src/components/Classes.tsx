@@ -86,7 +86,7 @@ export default function Classes({ onNavigate }: { onNavigate?: (view: string) =>
       
       setClasses(cData.sort((a: Class, b: Class) => new Date(a.date).getTime() - new Date(b.date).getTime()));
       setStudentPackages(spData);
-      setEquipment(eqData.filter((e: Equipment) => e.status === 'Disponible' || e.status === 'En uso'));
+      setEquipment(eqData.filter((e: Equipment) => e.status === 'Disponible'));
       
       const studs: Record<string, Student> = {};
       sData.forEach((s: Student) => { studs[s.id] = s; });

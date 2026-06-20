@@ -10,12 +10,9 @@ import {
   LayoutGrid,
   Users,
   UserCheck,
-  AlertTriangle,
-  Waves,
   ClipboardList,
   Tablet,
-  Shirt,
-  RefreshCw
+  Shirt
 } from 'lucide-react';
 import { Equipment, Student, Instructor } from '../types';
 import { getEquipment, addEquipment, updateEquipment, deleteEquipment, getStudents, getInstructors } from '../services/db';
