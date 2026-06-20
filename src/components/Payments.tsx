@@ -48,6 +48,9 @@ export default function Payments({ onNavigate }: { onNavigate?: (view: string) =
   const [assignNotes, setAssignNotes] = useState('');
   const [assignDueDate, setAssignDueDate] = useState('');
 
+  // Multi-select deletion
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
   // Edit cobranza details modal
   const [editingDetails, setEditingDetails] = useState<StudentPackage | null>(null);
   const [editPackageName, setEditPackageName] = useState('');
@@ -277,6 +280,42 @@ export default function Payments({ onNavigate }: { onNavigate?: (view: string) =
     }
   };
 
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filteredPending.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredPending.map(sp => sp.id!)));
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    const count = selectedIds.size;
+    if (!window.confirm(`¿Eliminar ${count} plan(es) de cobro pendiente? También se eliminarán todos los pagos registrados de estos planes.`)) return;
+    try {
+      for (const spId of selectedIds) {
+        const relatedPayments = payments.filter(p => p.studentPackageId === spId);
+        for (const p of relatedPayments) {
+          await deletePayment(p.id!);
+        }
+        await deleteStudentPackage(spId);
+      }
+      setSelectedIds(new Set());
+      await fetchData();
+    } catch (error) {
+      console.error("Error en eliminación múltiple:", error);
+      alert("Error al eliminar los cobros seleccionados");
+    }
+  };
+
   const handleOpenEditDetails = (sp: StudentPackage) => {
     setEditingDetails(sp);
     setEditPackageName(sp.packageName || '');
@@ -395,7 +434,7 @@ export default function Payments({ onNavigate }: { onNavigate?: (view: string) =
       </div>
 
       {/* MAIN SALDOS table */}
-      <div className="bg-white rounded-2xl shadow-sm overflow-hidden border border-slate-150 overflow-x-auto">
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-150">
         <div className="px-6 py-4 border-b border-slate-150 bg-slate-50/50 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <h3 className="text-xs font-bold text-slate-650 uppercase tracking-widest font-mono whitespace-nowrap">Cobros Pendientes</h3>
@@ -416,11 +455,33 @@ export default function Payments({ onNavigate }: { onNavigate?: (view: string) =
             />
           </div>
         </div>
+
+        {selectedIds.size > 0 && (
+          <div className="bg-cyan-50 border-b border-cyan-200 px-6 py-2.5 flex items-center justify-between">
+            <span className="text-xs font-bold text-cyan-800">{selectedIds.size} seleccionado(s)</span>
+            <button
+              onClick={handleBulkDelete}
+              className="inline-flex items-center gap-1 px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg text-[10px] font-bold transition cursor-pointer"
+            >
+              <Trash2 className="w-3 h-3" />
+              Eliminar seleccionados
+            </button>
+          </div>
+        )}
         
+        <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-slate-150">
           <thead className="bg-slate-50/10">
             <tr>
-              <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-widest font-mono cursor-pointer hover:text-slate-700 select-none" onClick={() => handleSort('student')}>
+              <th className="px-3 py-3.5 w-10">
+                <input
+                  type="checkbox"
+                  checked={filteredPending.length > 0 && selectedIds.size === filteredPending.length}
+                  onChange={toggleSelectAll}
+                  className="w-4 h-4 rounded border-slate-300 text-cyan-600 focus:ring-cyan-500 cursor-pointer"
+                />
+              </th>
+              <th className="px-3 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-widest font-mono cursor-pointer hover:text-slate-700 select-none" onClick={() => handleSort('student')}>
                 Alumno <SortIcon col="student" />
               </th>
               <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-widest font-mono cursor-pointer hover:text-slate-700 select-none" onClick={() => handleSort('package')}>
@@ -448,8 +509,16 @@ export default function Payments({ onNavigate }: { onNavigate?: (view: string) =
               const isDue = sp.paymentDueDate && isBefore(parseISO(sp.paymentDueDate), today);
 
               return (
-                <tr key={sp.id} className={`transition ${isDue ? 'bg-red-50/40 hover:bg-red-50/70' : 'hover:bg-slate-50/50'}`}>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                <tr key={sp.id} className={`transition ${isDue ? 'bg-red-50/40 hover:bg-red-50/70' : 'hover:bg-slate-50/50'} ${selectedIds.has(sp.id!) ? 'bg-cyan-50/60' : ''}`}>
+                  <td className="px-3 py-4 w-10">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(sp.id!)}
+                      onChange={() => toggleSelect(sp.id!)}
+                      className="w-4 h-4 rounded border-slate-300 text-cyan-600 focus:ring-cyan-500 cursor-pointer"
+                    />
+                  </td>
+                  <td className="px-3 py-4 whitespace-nowrap">
                     <div className="text-sm font-bold text-slate-900 font-display">{student?.name || 'Pasajero no registrado'}</div>
                     <div className="text-[10px] text-slate-400 font-mono">{student?.phone || 'Sin cel'}</div>
                   </td>
@@ -512,11 +581,12 @@ export default function Payments({ onNavigate }: { onNavigate?: (view: string) =
             })}
             {filteredPending.length === 0 && !loading && (
               <tr>
-                <td colSpan={7} className="px-6 py-10 text-center text-sm text-slate-400 bg-slate-50/55 italic">No hay saldos deudores registrados. ¡Todo está al día!</td>
+                <td colSpan={8} className="px-6 py-10 text-center text-sm text-slate-400 bg-slate-50/55 italic">No hay saldos deudores registrados. ¡Todo está al día!</td>
               </tr>
             )}
           </tbody>
         </table>
+        </div>
       </div>
 
       {/* RECORD INDIVIDUAL TRANSACTION MODAL */}

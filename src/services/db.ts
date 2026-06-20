@@ -1,4 +1,4 @@
-import { Student, Instructor, Package, StudentPackage, Class, Payment, Equipment } from '../types';
+import { Student, Instructor, Package, StudentPackage, Class, Payment, Equipment, AppUser } from '../types';
 
 export enum OperationType {
   CREATE = 'create',
@@ -22,7 +22,8 @@ export const LS_KEYS = {
   studentPackages: 'pacific_surf_student_packages_ls',
   classes: 'pacific_surf_classes_ls',
   payments: 'pacific_surf_payments_ls',
-  equipment: 'pacific_surf_equipment_ls'
+  equipment: 'pacific_surf_equipment_ls',
+  users: 'pacific_surf_users_ls'
 };
 
 // Check if we should use LocalStorage Mode (Static deployment like GitHub Pages)
@@ -498,6 +499,62 @@ export const deleteEquipment = async (id: string): Promise<void> => {
     setLS(LS_KEYS.equipment, list.filter(e => e.id !== id));
   } else {
     await fetch(`/api/equipment/${id}`, { method: 'DELETE' });
+  }
+  triggerPostMutation();
+};
+
+export const getUsers = async (): Promise<AppUser[]> => {
+  if (isLocalStorageMode()) {
+    return getLS<AppUser>(LS_KEYS.users);
+  }
+  const res = await fetch('/api/users');
+  return res.json();
+};
+
+export const addUser = async (user: { email: string; password: string; name?: string }): Promise<AppUser> => {
+  let result: AppUser;
+  if (isLocalStorageMode()) {
+    const list = getLS<AppUser>(LS_KEYS.users);
+    const newUser: AppUser = { id: 'usr-' + Math.random().toString(36).substr(2, 9), email: user.email, name: user.name || user.email.split('@')[0] };
+    list.push(newUser);
+    setLS(LS_KEYS.users, list);
+    result = newUser;
+  } else {
+    const res = await fetch('/api/users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(user)
+    });
+    result = await res.json();
+  }
+  triggerPostMutation();
+  return result;
+};
+
+export const updateUser = async (id: string, data: Partial<AppUser>): Promise<void> => {
+  if (isLocalStorageMode()) {
+    const list = getLS<AppUser>(LS_KEYS.users);
+    const index = list.findIndex(u => u.id === id);
+    if (index !== -1) {
+      list[index] = { ...list[index], ...data };
+      setLS(LS_KEYS.users, list);
+    }
+  } else {
+    await fetch(`/api/users/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+  }
+  triggerPostMutation();
+};
+
+export const deleteUser = async (id: string): Promise<void> => {
+  if (isLocalStorageMode()) {
+    const list = getLS<AppUser>(LS_KEYS.users);
+    setLS(LS_KEYS.users, list.filter(u => u.id !== id));
+  } else {
+    await fetch(`/api/users/${id}`, { method: 'DELETE' });
   }
   triggerPostMutation();
 };

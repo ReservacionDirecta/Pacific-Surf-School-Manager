@@ -61,6 +61,13 @@ export interface Equipment {
   updated_at?: string;
 }
 
+export interface AppUser {
+  id?: string;
+  email: string;
+  password?: string;
+  name: string;
+}
+
 export interface Class {
   id?: string;
   date: string; // ISO string

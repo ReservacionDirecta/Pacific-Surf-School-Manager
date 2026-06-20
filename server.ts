@@ -484,6 +484,52 @@ async function startServer() {
     }
   });
 
+  // Users
+  app.get('/api/users', async (req, res) => {
+    const users = await db.prepare('SELECT id, email, name FROM users').all();
+    res.json(users);
+  });
+
+  app.post('/api/users', async (req, res) => {
+    const { email, password, name } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email y contraseña son obligatorios' });
+    }
+    try {
+      const hashedPassword = await bcrypt.hash(password, 10);
+      const result = await db.prepare('INSERT INTO users (email, password, name) VALUES (?, ?, ?)').run(email, hashedPassword, name || email.split('@')[0]);
+      res.json({ id: result.lastInsertRowid, email, name: name || email.split('@')[0] });
+    } catch (error: any) {
+      res.status(400).json({ error: 'El correo ya está en uso' });
+    }
+  });
+
+  app.put('/api/users/:id', async (req, res) => {
+    const { id } = req.params;
+    const { email, name, password } = req.body;
+    try {
+      if (password) {
+        const hashedPassword = await bcrypt.hash(password, 10);
+        await db.prepare('UPDATE users SET email = ?, name = ?, password = ? WHERE id = ?').run(email, name, hashedPassword, id);
+      } else {
+        await db.prepare('UPDATE users SET email = ?, name = ? WHERE id = ?').run(email, name, id);
+      }
+      res.json({ id, email, name });
+    } catch (error: any) {
+      res.status(400).json({ error: 'Error al actualizar usuario' });
+    }
+  });
+
+  app.delete('/api/users/:id', async (req, res) => {
+    const { id } = req.params;
+    const adminEmail = 'admin@pacificsurf.com';
+    const target = await db.prepare('SELECT * FROM users WHERE id = ?').get(id) as any;
+    if (!target) return res.status(404).json({ error: 'Usuario no encontrado' });
+    if (target.email === adminEmail) return res.status(400).json({ error: 'No se puede eliminar el administrador principal' });
+    await db.prepare('DELETE FROM users WHERE id = ?').run(id);
+    res.json({ success: true });
+  });
+
   // Students
   app.get('/api/students', async (req, res) => {
     const students = await db.prepare('SELECT * FROM students').all();

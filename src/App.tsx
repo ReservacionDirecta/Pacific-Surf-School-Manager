@@ -16,13 +16,13 @@ import {
   LogOut, 
   Menu, 
   X,
-  Waves,
   Lock,
   Mail,
   User as UserIcon,
   ArrowLeft,
   ClipboardList,
   Settings,
+  ShieldAlert,
   ChevronDown
 } from 'lucide-react';
 
@@ -35,6 +35,18 @@ import Payments from './components/Payments';
 import ImportStudents from './components/ImportStudents';
 import GoogleSheetsSync from './components/GoogleSheetsSync';
 import EquipmentManager from './components/Equipment';
+import UsersManager from './components/Users';
+
+const SurfboardLogo = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 100 100" className={className}>
+    <g transform="rotate(45, 50, 50)">
+      <path d="M50,2 C62,12 68,30 68,46 C68,58 66,66 64,76 C64,85 58,92 52,96 C50,97 50,99 50,99 C50,99 50,97 48,96 C42,92 36,85 36,76 C34,66 32,58 32,46 C32,30 38,12 50,2 Z"
+        fill="#2d2d2d" />
+      <path d="M49,10 L49,90" stroke="#555" strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M47,84 L50,97 L53,84 Z" fill="#1a1a1a" />
+    </g>
+  </svg>
+);
 
 export default function App() {
   const [view, setView] = useState('dashboard');
@@ -46,6 +58,7 @@ export default function App() {
   const [isRegistering, setIsRegistering] = useState(false);
   const [authError, setAuthError] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({});
 
   const toggleMenu = (id: string) => {
@@ -117,6 +130,7 @@ export default function App() {
       name: 'Configuración',
       icon: Settings,
       subItems: [
+        { id: 'users', name: 'Usuarios', icon: ShieldAlert },
         { id: 'sheets', name: 'Sincronizar', icon: RefreshCw },
         { id: 'import', name: 'Importar', icon: Upload },
       ]
@@ -128,7 +142,7 @@ export default function App() {
       <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50">
         <div className="relative flex items-center justify-center">
           <div className="animate-spin rounded-full h-16 w-16 border-4 border-cyan-100 border-t-cyan-600"></div>
-          <Waves className="absolute w-6 h-6 text-cyan-600" />
+          <SurfboardLogo className="absolute w-6 h-6 text-cyan-600" />
         </div>
         <p className="mt-4 text-sm font-semibold font-display text-slate-500 tracking-wider">Cargando Pacific Surf...</p>
       </div>
@@ -151,8 +165,8 @@ export default function App() {
           className="bg-slate-900/80 backdrop-blur-xl p-8 sm:p-10 rounded-2xl shadow-2xl border border-slate-800 max-w-md w-full relative z-10"
         >
           <div className="flex flex-col items-center mb-8">
-            <div className="bg-gradient-to-tr from-cyan-500 to-blue-600 p-3 rounded-xl text-white shadow-lg shadow-cyan-500/20 mb-3 hover:scale-105 transition-transform duration-300">
-              <Waves className="w-8 h-8 md:animate-bounce" />
+            <div className="bg-white/90 p-3 rounded-xl shadow-lg shadow-black/10 mb-3 hover:scale-105 transition-transform duration-300 border border-slate-200">
+              <SurfboardLogo className="w-8 h-8" />
             </div>
             <h1 className="text-3.5xl font-extrabold tracking-tight bg-gradient-to-r from-white via-cyan-100 to-cyan-400 bg-clip-text text-transparent font-display">
               Pacific Surf
@@ -236,8 +250,8 @@ export default function App() {
             </button>
           )}
           <button onClick={() => { setView('dashboard'); setViewHistory([]); }} className="flex items-center gap-2.5 cursor-pointer">
-            <div className="bg-cyan-500 p-1.5 rounded text-white">
-              <Waves className="w-4.5 h-4.5" />
+            <div className="bg-white/90 p-1.5 rounded border border-slate-200 shadow-sm">
+              <SurfboardLogo className="w-4.5 h-4.5" />
             </div>
             <span className="font-extrabold tracking-tight text-white font-display text-base hidden sm:inline">Pacific Surf</span>
           </button>
@@ -257,29 +271,40 @@ export default function App() {
         </div>
       </header>
 
+      {/* COLLAPSE TOGGLE BUTTON — pinned to right edge of sidebar */}
+      <button
+        onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+        className="hidden lg:flex fixed top-16 z-40 w-6 h-6 items-center justify-center bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-r-md border border-slate-700 border-l-0 cursor-pointer transition-all duration-300"
+        style={{ left: sidebarCollapsed ? '64px' : '256px' }}
+        title={sidebarCollapsed ? 'Expandir menú' : 'Contraer menú'}
+      >
+        <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-300 ${sidebarCollapsed ? 'rotate-90' : '-rotate-90'}`} />
+      </button>
+
       {/* SIDEBAR FOR DESKTOP (left rail, below top navbar) */}
-      <aside className="hidden lg:flex flex-col fixed left-0 top-16 bottom-0 w-64 bg-slate-900 text-slate-300 border-r border-slate-800 z-30">
+      <aside className={`hidden lg:flex flex-col fixed left-0 top-16 bottom-0 transition-all duration-300 bg-slate-900 text-slate-300 border-r border-slate-800 z-30 ${sidebarCollapsed ? 'w-16' : 'w-64'}`}>
         {/* Navigation list */}
-        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+        <nav className="flex-1 p-3 space-y-1 overflow-y-auto overflow-x-hidden">
           {menuItems.map(item => {
             const Icon = item.icon;
             if (item.subItems) {
               const isExpanded = expandedMenus[item.id];
               const isChildActive = item.subItems.some(s => view === s.id);
               return (
-                <div key={item.id}>
-                  <button onClick={() => toggleMenu(item.id)}
-                    className={`w-full flex items-center gap-3.5 px-4 py-3 rounded-lg text-sm font-semibold cursor-pointer tracking-wide transition-all duration-200 ${
+                <div key={item.id} className="relative">
+                  <button onClick={() => { if (sidebarCollapsed) { navigateTo(item.subItems[0].id); } else { toggleMenu(item.id); } }}
+                    className={`w-full flex items-center gap-3.5 px-3 py-3 rounded-lg text-sm font-semibold cursor-pointer tracking-wide transition-all duration-200 whitespace-nowrap ${
                       isChildActive
                         ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-md shadow-blue-900/25 border-l-4 border-cyan-400'
                         : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-                    }`}
+                    } ${sidebarCollapsed ? 'justify-center px-0' : ''}`}
+                    title={sidebarCollapsed ? item.name : undefined}
                   >
-                    <Icon className={`w-4 h-4 shrink-0 transition-transform ${isChildActive ? 'scale-110' : ''}`} />
-                    {item.name}
-                    <ChevronDown className={`w-3.5 h-3.5 ml-auto transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                    <Icon className={`w-4.5 h-4.5 shrink-0 transition-transform ${isChildActive ? 'scale-110' : ''}`} />
+                    <span className={`transition-opacity duration-200 ${sidebarCollapsed ? 'hidden' : ''}`}>{item.name}</span>
+                    <ChevronDown className={`w-3.5 h-3.5 ml-auto transition-transform ${isExpanded ? 'rotate-180' : ''} ${sidebarCollapsed ? 'hidden' : ''}`} />
                   </button>
-                  {isExpanded && (
+                  {isExpanded && !sidebarCollapsed && (
                     <div className="ml-4 mt-1 space-y-0.5 border-l-2 border-slate-700 pl-3">
                       {item.subItems.map(sub => {
                         const SubIcon = sub.icon;
@@ -305,29 +330,28 @@ export default function App() {
             const active = view === item.id;
             return (
               <button key={item.id} onClick={() => navigateTo(item.id)}
-                className={`w-full flex items-center gap-3.5 px-4 py-3 rounded-lg text-sm font-semibold cursor-pointer tracking-wide transition-all duration-200 ${
+                className={`w-full flex items-center gap-3.5 px-3 py-3 rounded-lg text-sm font-semibold cursor-pointer tracking-wide transition-all duration-200 whitespace-nowrap ${
                   active 
                     ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-md shadow-blue-900/25 border-l-4 border-cyan-400' 
                     : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-                }`}
+                } ${sidebarCollapsed ? 'justify-center px-0' : ''}`}
+                title={sidebarCollapsed ? item.name : undefined}
               >
-                <Icon className={`w-4 h-4 shrink-0 transition-transform ${active ? 'scale-110' : ''}`} />
-                {item.name}
+                <Icon className={`w-4.5 h-4.5 shrink-0 transition-transform ${active ? 'scale-110' : ''}`} />
+                <span className={`transition-opacity duration-200 ${sidebarCollapsed ? 'hidden' : ''}`}>{item.name}</span>
               </button>
             );
           })}
         </nav>
 
-        <div className="p-4 border-t border-slate-800 bg-slate-950/40">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2.5 truncate">
-              <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-300 p-2 border border-slate-700 shrink-0">
-                <UserIcon className="w-4 h-4" />
-              </div>
-              <div className="truncate">
-                <p className="text-xs font-bold text-slate-200 truncate">{user.displayName || user.email.split('@')[0]}</p>
-                <p className="text-[10px] text-slate-500 font-mono truncate">{user.email}</p>
-              </div>
+        <div className={`p-3 border-t border-slate-800 bg-slate-950/40 transition-all duration-300 ${sidebarCollapsed ? 'flex justify-center' : ''}`}>
+          <div className={`flex items-center gap-2.5 truncate ${sidebarCollapsed ? 'justify-center' : ''}`}>
+            <div className="w-8 h-8 min-w-[2rem] rounded-full bg-slate-800 flex items-center justify-center text-slate-300 p-2 border border-slate-700 shrink-0">
+              <UserIcon className="w-4 h-4" />
+            </div>
+            <div className={`truncate transition-opacity duration-200 ${sidebarCollapsed ? 'hidden' : ''}`}>
+              <p className="text-xs font-bold text-slate-200 truncate">{user.displayName || user.email.split('@')[0]}</p>
+              <p className="text-[10px] text-slate-500 font-mono truncate">{user.email}</p>
             </div>
           </div>
         </div>
@@ -344,7 +368,7 @@ export default function App() {
               className="fixed inset-y-0 left-0 w-64 bg-slate-950 text-slate-300 z-50 flex flex-col lg:hidden shadow-2xl border-r border-slate-900">
               <div className="p-4 border-b border-slate-900 flex justify-between items-center bg-slate-900">
                 <span className="font-extrabold tracking-normal text-white text-base flex items-center gap-2">
-                  <Waves className="w-5 h-5 text-cyan-400" /> Pacific Surf
+                  <SurfboardLogo className="w-5 h-5" /> Pacific Surf
                 </span>
                 <button onClick={() => setSidebarOpen(false)}
                   className="p-1 rounded-md text-slate-400 hover:bg-slate-850 hover:text-white">
@@ -419,7 +443,7 @@ export default function App() {
       </AnimatePresence>
 
       {/* MAIN DISPLAY VIEWPORT */}
-      <div className="flex-1 flex lg:pl-64 pt-16">
+      <div className={`flex-1 flex pt-16 transition-all duration-300 ${sidebarCollapsed ? 'lg:pl-16' : 'lg:pl-64'}`}>
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 min-h-[calc(100vh-4rem)]">
           <div className="max-w-7xl mx-auto">
             <AnimatePresence mode="wait">
@@ -437,6 +461,7 @@ export default function App() {
                 {view === 'payments' && <Payments onNavigate={navigateTo} />}
                 {view === 'sheets' && <GoogleSheetsSync />}
                 {view === 'import' && <ImportStudents />}
+                {view === 'users' && <UsersManager />}
                 {view === 'equipment' && <EquipmentManager />}
               </motion.div>
             </AnimatePresence>
