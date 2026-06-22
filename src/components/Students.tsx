@@ -20,6 +20,8 @@ import {
   MessageSquare,
   Award,
   ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
   ChevronDown,
   Sparkles,
   Compass,
@@ -53,7 +55,8 @@ export default function Students({ onNavigate }: { onNavigate?: (view: string) =
   const [filterName, setFilterName] = useState('');
   const [filterBoard, setFilterBoard] = useState('Todos');
   const [filterStatus, setFilterStatus] = useState('Todos');
-  const [sortBy, setSortBy] = useState('name-asc');
+  const [sortKey, setSortKey] = useState('name');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
 
   const fetchData = async () => {
     try {
@@ -328,19 +331,49 @@ export default function Students({ onNavigate }: { onNavigate?: (view: string) =
       return matchName && matchBoard && matchStatus;
     });
 
-  const sortedStudents = [...filteredStudents].sort((a, b) => {
-    if (sortBy === 'name-asc') {
-      return a.name.localeCompare(b.name);
-    } else if (sortBy === 'name-desc') {
-      return b.name.localeCompare(a.name);
-    } else if (sortBy === 'recent') {
-      const dateA = a.enrollmentDate ? new Date(a.enrollmentDate).getTime() : 0;
-      const dateB = b.enrollmentDate ? new Date(b.enrollmentDate).getTime() : 0;
-      return dateB - dateA;
-    } else if (sortBy === 'age-desc') {
-      return (b.age || 0) - (a.age || 0);
+  const handleSort = (key: string) => {
+    if (sortKey === key) {
+      setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortKey(key);
+      setSortDir('asc');
     }
-    return 0;
+  };
+
+  const SortIcon = ({ col }: { col: string }) => {
+    if (sortKey !== col) return <ArrowUpDown className="w-3 h-3 ml-1 inline-block opacity-30" />;
+    return sortDir === 'asc'
+      ? <ArrowUp className="w-3 h-3 ml-1 inline-block text-cyan-600" />
+      : <ArrowDown className="w-3 h-3 ml-1 inline-block text-cyan-600" />;
+  };
+
+  const getContactSortValue = (s: Student) => {
+    return `${s.phone || ''}${s.email || ''}${s.parentsName || ''}`.toLowerCase();
+  };
+
+  const getPlanSortValue = (s: Student) => {
+    const active = studentPackages.find(sp => sp.studentId === s.id && sp.status === 'active');
+    if (active) return `active_${active.packageName || ''}_${active.totalClasses - active.classesUsed}`;
+    const exhausted = studentPackages.some(sp => sp.studentId === s.id && sp.status === 'exhausted');
+    if (exhausted) return 'exhausted';
+    return 'none';
+  };
+
+  const sortedStudents = [...filteredStudents].sort((a, b) => {
+    const dir = sortDir === 'asc' ? 1 : -1;
+    let cmp = 0;
+    if (sortKey === 'name') {
+      cmp = a.name.localeCompare(b.name);
+    } else if (sortKey === 'age') {
+      cmp = (a.age || 0) - (b.age || 0);
+    } else if (sortKey === 'board') {
+      cmp = (a.hasBoard || '').localeCompare(b.hasBoard || '');
+    } else if (sortKey === 'contact') {
+      cmp = getContactSortValue(a).localeCompare(getContactSortValue(b));
+    } else if (sortKey === 'plan') {
+      cmp = getPlanSortValue(a).localeCompare(getPlanSortValue(b));
+    }
+    return cmp * dir;
   });
 
   return (
@@ -490,19 +523,10 @@ export default function Students({ onNavigate }: { onNavigate?: (view: string) =
             <option value="En proceso">Tabla En proceso</option>
           </select>
 
-          {/* Sort selection dropwdown */}
-          <div className="relative flex items-center gap-1">
-            <ArrowUpDown className="w-4 h-4 text-slate-400 shrink-0" />
-            <select
-              value={sortBy}
-              onChange={e => setSortBy(e.target.value)}
-              className="rounded-xl border border-slate-200 text-slate-800 bg-white px-3 py-2 sm:text-xs font-semibold focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 outline-none transition"
-            >
-              <option value="name-asc">A-Z Alfabético</option>
-              <option value="name-desc">Z-A Alfabético</option>
-              <option value="recent">Inscritos Recientemente</option>
-              <option value="age-desc">Edad: Mayor a menor</option>
-            </select>
+          {/* Sort by column headers — click the table header to sort */}
+          <div className="hidden md:flex items-center gap-1.5 text-[10px] text-slate-400 font-mono">
+            <ArrowUpDown className="w-3 h-3" />
+            Ordena por columna
           </div>
         </div>
       </div>
@@ -545,11 +569,21 @@ export default function Students({ onNavigate }: { onNavigate?: (view: string) =
           <table className="min-w-full divide-y divide-slate-150">
             <thead className="bg-slate-50/70">
               <tr>
-                <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-widest font-mono">Nombre del Alumno</th>
-                <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-widest font-mono">Contacto / Apoderado</th>
-                <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-widest font-mono">Edad</th>
-                <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-widest font-mono">Tabla Propia</th>
-                <th className="px-6 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-widest font-mono">Plan / Estado</th>
+                <th onClick={() => handleSort('name')} className="px-6 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-widest font-mono cursor-pointer hover:text-slate-700 select-none">
+                  Nombre del Alumno <SortIcon col="name" />
+                </th>
+                <th onClick={() => handleSort('contact')} className="px-6 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-widest font-mono cursor-pointer hover:text-slate-700 select-none">
+                  Contacto / Apoderado <SortIcon col="contact" />
+                </th>
+                <th onClick={() => handleSort('age')} className="px-6 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-widest font-mono cursor-pointer hover:text-slate-700 select-none">
+                  Edad <SortIcon col="age" />
+                </th>
+                <th onClick={() => handleSort('board')} className="px-6 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-widest font-mono cursor-pointer hover:text-slate-700 select-none">
+                  Tabla Propia <SortIcon col="board" />
+                </th>
+                <th onClick={() => handleSort('plan')} className="px-6 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-widest font-mono cursor-pointer hover:text-slate-700 select-none">
+                  Plan / Estado <SortIcon col="plan" />
+                </th>
                 <th className="px-6 py-3.5 text-right text-xs font-bold text-slate-400 uppercase tracking-widest font-mono">Acciones</th>
               </tr>
             </thead>
