@@ -92,7 +92,24 @@ const initDefaultLocalStorageData = () => {
     localStorage.setItem(LS_KEYS.classes, JSON.stringify(defaultClasses));
   }
 
-  // 6. Payments
+  // 6. Equipment
+  if (!localStorage.getItem(LS_KEYS.equipment)) {
+    const defaultEquipment: Equipment[] = [
+      { type: 'Tabla', size: "6'0\"", brand: 'Torq', condition: 'Bueno', status: 'Disponible', notes: 'Tabla de inicio' },
+      { type: 'Tabla', size: "6'4\"", brand: 'NSP', condition: 'Nuevo', status: 'Disponible', notes: '' },
+      { type: 'Tabla', size: "5'8\"", brand: 'Firewire', condition: 'Bueno', status: 'Disponible', notes: '' },
+      { type: 'Tabla', size: "7'0\"", brand: 'Bic Sport', condition: 'Bueno', status: 'Disponible', notes: 'Tabla de aprendizaje' },
+      { type: 'Wetsuit', size: 'M', brand: 'Rip Curl', condition: 'Bueno', status: 'Disponible', notes: '3/2mm' },
+      { type: 'Wetsuit', size: 'L', brand: "O'Neill", condition: 'Nuevo', status: 'Disponible', notes: '4/3mm' },
+      { type: 'Wetsuit', size: 'S', brand: 'Quiksilver', condition: 'Bueno', status: 'Disponible', notes: '' },
+      { type: 'Lycra', size: 'M', brand: 'Rip Curl', condition: 'Nuevo', status: 'Disponible', notes: '' },
+      { type: 'Lycra', size: 'L', brand: 'Rip Curl', condition: 'Bueno', status: 'Disponible', notes: '' },
+      { type: 'Lycra', size: 'S', brand: 'Billabong', condition: 'Bueno', status: 'Disponible', notes: '' },
+    ].map(e => ({ ...e, id: 'equip-' + e.type.toLowerCase() + '-' + e.size.replace(/[^a-z0-9]/gi, '').toLowerCase() }));
+    localStorage.setItem(LS_KEYS.equipment, JSON.stringify(defaultEquipment));
+  }
+
+  // 7. Payments
   if (!localStorage.getItem(LS_KEYS.payments)) {
     const defaultPayments: Payment[] = [
       { id: 'pay-1', studentPackageId: 'sp-1', amount: 60, date: '2026-06-05T10:05:00.000Z', method: 'Efectivo', notes: 'Cancelado al matricular' },

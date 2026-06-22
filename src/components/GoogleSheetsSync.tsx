@@ -15,7 +15,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { getAccessToken, googleSignIn, logoutGoogle, initAuth } from '../services/googleAuth';
-import { getStudents, getInstructors, getClasses, getStudentPackages, addStudent, addStudentPackage, getPackages, getPayments, isLocalStorageMode, LS_KEYS } from '../services/db';
+import { getStudents, getInstructors, getClasses, getStudentPackages, addStudent, addStudentPackage, getPackages, getPayments, getEquipment, isLocalStorageMode, LS_KEYS } from '../services/db';
 import { User } from 'firebase/auth';
 
 const DEFAULT_SPREADSHEET_ID = '1OuuRJwIUwqEnfb9d_JMOsItxMDGwRAA231vRTO-diR8';
@@ -184,16 +184,17 @@ export default function GoogleSheetsSync() {
     addLog('Iniciando exportación de datos a Google Sheets...');
 
     try {
-      const sheetNames = ['Alumnos', 'Instructores', 'Clases', 'Paquetes', 'Paquetes de Alumnos', 'Pagos registrados'];
+      const sheetNames = ['Alumnos', 'Instructores', 'Clases', 'Paquetes', 'Paquetes de Alumnos', 'Pagos registrados', 'Equipamiento'];
       await ensureSheetsExist(activeToken, spreadsheetId, sheetNames);
 
-      const [alumnos, instructores, clases, studentPkgs, pagos, paquetesCatalogo] = await Promise.all([
+      const [alumnos, instructores, clases, studentPkgs, pagos, paquetesCatalogo, equipamiento] = await Promise.all([
         getStudents(),
         getInstructors(),
         getClasses(),
         getStudentPackages(),
         getPayments(),
-        getPackages()
+        getPackages(),
+        getEquipment()
       ]);
 
       // 1. Export Alumnos
@@ -257,6 +258,17 @@ export default function GoogleSheetsSync() {
         ...paquetesCatalogo.map(p => [p.id || '', p.name, p.price ?? 0, p.totalClasses ?? 1])
       ];
       await writeSheetData(activeToken, spreadsheetId, 'Paquetes!A1:D500', pkgValues);
+
+      // 7. Export Equipamiento
+      addLog(`Exportando ${equipamiento.length} equipos...`);
+      const equipValues = [
+        ['ID', 'Tipo', 'Talla', 'Marca', 'Condición', 'Estado', 'Notas', 'Asignado A Tipo', 'Asignado A ID', 'Asignado A Nombre'],
+        ...equipamiento.map(e => [
+          e.id || '', e.type, e.size, e.brand || '', e.condition, e.status,
+          e.notes || '', e.assignedToType || '', e.assignedToId || '', e.assignedToName || ''
+        ])
+      ];
+      await writeSheetData(activeToken, spreadsheetId, 'Equipamiento!A1:J2000', equipValues);
 
       addLog('✅ ¡Exportación completada exitosamente en todas las pestañas!');
       alert('Sincronización de exportación finalizada correctamente.');
@@ -558,7 +570,46 @@ export default function GoogleSheetsSync() {
       }
       addLog(`Se leyeron ${parsedStudentPackages.length} planes de alumnos.`);
 
-      // 5. Fetch Paquetes catalog from Sheets
+      // 5. Fetch Equipamiento from Sheets
+      addLog('Leyendo datos de Equipamiento desde Sheets...');
+      const equipRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Equipamiento!A1:J2000`, {
+        headers: { Authorization: `Bearer ${activeToken}` }
+      });
+      const equipData = equipRes.ok ? await equipRes.json() : null;
+      const equipRows = equipData?.values || [];
+      const parsedEquipment: any[] = [];
+      if (equipRows.length >= 2) {
+        const headers = equipRows[0].map((h: string) => h.trim().toLowerCase());
+        const idIdx = headers.indexOf('id');
+        const typeIdx = headers.indexOf('tipo');
+        const sizeIdx = headers.indexOf('talla');
+        const brandIdx = headers.indexOf('marca');
+        const conditionIdx = headers.indexOf('condición') !== -1 ? headers.indexOf('condición') : headers.indexOf('condicion');
+        const statusIdx = headers.indexOf('estado');
+        const notesIdx = headers.indexOf('notas');
+        const assTypeIdx = headers.indexOf('asignado a tipo');
+        const assIdIdx = headers.indexOf('asignado a id');
+        const assNameIdx = headers.indexOf('asignado a nombre');
+        for (let i = 1; i < equipRows.length; i++) {
+          const row = equipRows[i];
+          if (!row[typeIdx]) continue;
+          parsedEquipment.push({
+            id: row[idIdx] || `equip-${Date.now()}-${i}`,
+            type: (row[typeIdx] || '').trim(),
+            size: row[sizeIdx] || '',
+            brand: row[brandIdx] || '',
+            condition: row[conditionIdx] || 'Bueno',
+            status: row[statusIdx] || 'Disponible',
+            notes: row[notesIdx] || '',
+            assignedToType: row[assTypeIdx] || '',
+            assignedToId: row[assIdIdx] || '',
+            assignedToName: row[assNameIdx] || ''
+          });
+        }
+      }
+      addLog(`Se leyeron ${parsedEquipment.length} equipos.`);
+
+      // 6. Fetch Paquetes catalog from Sheets
       addLog('Leyendo catálogo de Planes desde Sheets...');
       const pkgCatRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Paquetes!A1:D500`, {
         headers: { Authorization: `Bearer ${activeToken}` }
@@ -588,22 +639,20 @@ export default function GoogleSheetsSync() {
       }
       addLog(`Se leyeron ${parsedPkgCatalog.length} planes del catálogo.`);
 
-      // 6. Gather current local payments to avoid dropping them
-      addLog('Consultando planes y pagos locales...');
-      const [currentPkgs, currentPayments] = await Promise.all([
-        getPackages(),
-        getPayments().catch(() => [])
-      ]);
+      // Gather current local payments to avoid dropping them
+      addLog('Consultando pagos locales...');
+      const currentPayments = await getPayments().catch(() => []);
 
-      // 6. Overwrite the database
+      // Overwrite the database
       if (isLocalStorageMode()) {
         addLog('Modo estático detectado. Sobrescribiendo datos directamente en LocalStorage...');
         localStorage.setItem(LS_KEYS.students, JSON.stringify(parsedStudents));
         localStorage.setItem(LS_KEYS.instructors, JSON.stringify(parsedInstructors));
-        localStorage.setItem(LS_KEYS.packages, JSON.stringify(parsedPkgCatalog.length > 0 ? parsedPkgCatalog : currentPkgs));
+        localStorage.setItem(LS_KEYS.packages, JSON.stringify(parsedPkgCatalog.length > 0 ? parsedPkgCatalog : []));
         localStorage.setItem(LS_KEYS.studentPackages, JSON.stringify(parsedStudentPackages));
         localStorage.setItem(LS_KEYS.classes, JSON.stringify(parsedClasses));
         localStorage.setItem(LS_KEYS.payments, JSON.stringify(currentPayments));
+        localStorage.setItem(LS_KEYS.equipment, JSON.stringify(parsedEquipment));
 
         addLog('✅ ¡Base de datos local (LocalStorage) restaurada y actualizada con éxito!');
         alert('¡Base de datos local completamente restaurada en tu navegador desde Google Sheets!');
@@ -618,10 +667,11 @@ export default function GoogleSheetsSync() {
         body: JSON.stringify({
           students: parsedStudents,
           instructors: parsedInstructors,
-          packages: parsedPkgCatalog.length > 0 ? parsedPkgCatalog : currentPkgs,
+          packages: parsedPkgCatalog.length > 0 ? parsedPkgCatalog : [],
           studentPackages: parsedStudentPackages,
           classes: parsedClasses,
-          payments: currentPayments
+          payments: currentPayments,
+          equipment: parsedEquipment
         })
       });
       

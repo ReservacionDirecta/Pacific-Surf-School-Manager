@@ -482,6 +482,31 @@ async function startServer() {
     console.log(`🌱 Sembrados ${defaultPackages.length} planes por defecto (tabla vacía).`);
   }
 
+  // Seed default equipment only if table is empty (preserves user-created equipment)
+  const existingEquipCount = (await db.prepare('SELECT COUNT(*) as count FROM equipment').get() as any)?.count ?? 0;
+  if (existingEquipCount === 0) {
+    const defaultEquipment = [
+      { type: 'Tabla', size: "6'0\"", brand: 'Torq', condition: 'Bueno', status: 'Disponible', notes: 'Tabla de inicio' },
+      { type: 'Tabla', size: "6'4\"", brand: 'NSP', condition: 'Nuevo', status: 'Disponible', notes: '' },
+      { type: 'Tabla', size: "5'8\"", brand: 'Firewire', condition: 'Bueno', status: 'Disponible', notes: '' },
+      { type: 'Tabla', size: "7'0\"", brand: 'Bic Sport', condition: 'Bueno', status: 'Disponible', notes: 'Tabla de aprendizaje' },
+      { type: 'Wetsuit', size: 'M', brand: 'Rip Curl', condition: 'Bueno', status: 'Disponible', notes: '3/2mm' },
+      { type: 'Wetsuit', size: 'L', brand: "O'Neill", condition: 'Nuevo', status: 'Disponible', notes: '4/3mm' },
+      { type: 'Wetsuit', size: 'S', brand: 'Quiksilver', condition: 'Bueno', status: 'Disponible', notes: '' },
+      { type: 'Lycra', size: 'M', brand: 'Rip Curl', condition: 'Nuevo', status: 'Disponible', notes: '' },
+      { type: 'Lycra', size: 'L', brand: 'Rip Curl', condition: 'Bueno', status: 'Disponible', notes: '' },
+      { type: 'Lycra', size: 'S', brand: 'Billabong', condition: 'Bueno', status: 'Disponible', notes: '' },
+    ];
+    const now = new Date().toISOString();
+    for (const e of defaultEquipment) {
+      const id = Math.random().toString(36).substr(2, 9);
+      await db.prepare(
+        'INSERT INTO equipment (id, type, size, brand, condition, status, notes, "assignedToType", "assignedToId", "assignedToName", created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+      ).run(id, e.type, e.size, e.brand, e.condition, e.status, e.notes, '', '', '', now, now);
+    }
+    console.log(`🌱 Sembrados ${defaultEquipment.length} equipos por defecto (tabla vacía).`);
+  }
+
   // API Routes
   
   // Auth
