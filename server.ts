@@ -534,7 +534,7 @@ async function startServer() {
   // Users
   app.get('/api/users', async (req, res) => {
     const users = await db.prepare('SELECT id, email, name FROM users').all();
-    res.json(users);
+    res.json(users.map(normalizeRow));
   });
 
   app.post('/api/users', async (req, res) => {
@@ -580,7 +580,7 @@ async function startServer() {
   // Students
   app.get('/api/students', async (req, res) => {
     const students = await db.prepare('SELECT * FROM students').all();
-    res.json(students);
+    res.json(students.map(normalizeRow));
   });
 
   app.post('/api/students', async (req, res) => {
@@ -612,7 +612,7 @@ async function startServer() {
   // Instructors
   app.get('/api/instructors', async (req, res) => {
     const instructors = await db.prepare('SELECT * FROM instructors').all();
-    res.json(instructors);
+    res.json(instructors.map(normalizeRow));
   });
 
   app.post('/api/instructors', async (req, res) => {
@@ -627,7 +627,7 @@ async function startServer() {
   // Packages
   app.get('/api/packages', async (req, res) => {
     const packages = await db.prepare('SELECT * FROM packages').all();
-    res.json(packages);
+    res.json(packages.map(normalizeRow));
   });
 
   app.post('/api/packages', async (req, res) => {
@@ -651,7 +651,7 @@ async function startServer() {
   // Student Packages
   app.get('/api/student-packages', async (req, res) => {
     const sp = await db.prepare('SELECT * FROM student_packages').all();
-    res.json(sp);
+    res.json(sp.map(normalizeRow));
   });
 
   app.post('/api/student-packages', async (req, res) => {
@@ -676,7 +676,7 @@ async function startServer() {
   // Classes
   app.get('/api/classes', async (req, res) => {
     const classes = await db.prepare('SELECT * FROM classes').all();
-    res.json(classes);
+    res.json(classes.map(normalizeRow));
   });
 
   app.post('/api/classes', async (req, res) => {
@@ -735,7 +735,7 @@ async function startServer() {
   // Payments
   app.get('/api/payments', async (req, res) => {
     const payments = await db.prepare('SELECT * FROM payments').all();
-    res.json(payments);
+    res.json(payments.map(normalizeRow));
   });
 
   app.post('/api/payments', async (req, res) => {
@@ -765,7 +765,7 @@ async function startServer() {
   // Equipment
   app.get('/api/equipment', async (req, res) => {
     const items = await db.prepare('SELECT * FROM equipment').all();
-    res.json(items);
+    res.json(items.map(normalizeRow));
   });
 
   app.post('/api/equipment', async (req, res) => {
