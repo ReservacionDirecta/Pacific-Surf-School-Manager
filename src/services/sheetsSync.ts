@@ -154,6 +154,40 @@ export const syncFromGoogleSheets = async (spreadsheetId: string): Promise<SyncR
         }
       }
 
+      // --- FETCH STANDARD 'Paquetes' CATALOG TAB ---
+      let parsedPackages: Package[] = [];
+      if (sheetTitles.includes('Paquetes')) {
+        const pkgRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Paquetes!A1:Z200`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (pkgRes.ok) {
+          const pkgData = await pkgRes.json();
+          const rows = pkgData.values || [];
+          if (rows.length > 1) {
+            const headers = rows[0].map((h: string) => h.trim().toLowerCase());
+            const idxId = headers.indexOf('id');
+            const idxName = headers.indexOf('nombre');
+            const idxPrice = headers.indexOf('precio');
+            const idxClasses = headers.indexOf('clases totales');
+
+            for (let i = 1; i < rows.length; i++) {
+              const r = rows[i];
+              if (!r[idxName]) continue;
+              const pkgName = r[idxName].trim();
+              // Dedup by normalized name
+              const pkey = pkgName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+              if (parsedPackages.some(p => p.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') === pkey)) continue;
+              parsedPackages.push({
+                id: idxId !== -1 && r[idxId] ? r[idxId] : 'pkg_' + Math.random().toString(36).substr(2, 9),
+                name: pkgName,
+                price: idxPrice !== -1 ? Number(r[idxPrice]) || 0 : 0,
+                totalClasses: idxClasses !== -1 ? Number(r[idxClasses]) || 1 : 1
+              });
+            }
+          }
+        }
+      }
+
       // --- FETCH STANDARD 'Equipamiento' TAB ---
       if (sheetTitles.includes('Equipamiento')) {
         const eqRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Equipamiento!A1:Z1000`, {
@@ -367,7 +401,7 @@ export const syncFromGoogleSheets = async (spreadsheetId: string): Promise<SyncR
     const syncPayload = {
       students: parsedStudents,
       instructors: parsedInstructors,
-      packages: DEFAULT_PACKAGES,
+      packages: parsedPackages.length > 0 ? parsedPackages : DEFAULT_PACKAGES,
       studentPackages: parsedStudentPackages,
       classes: parsedClasses,
       payments: parsedPayments,
@@ -387,10 +421,11 @@ export const syncFromGoogleSheets = async (spreadsheetId: string): Promise<SyncR
     const overwriteResult = await overwriteRes.json();
     return {
       success: true,
-      message: `¡Sincronización exitosa! Se cargaron ${parsedStudents.length} alumnos y ${parsedStudentPackages.length} paquetes desde Google Sheets.`,
+      message: `¡Sincronización exitosa! Se cargaron ${parsedStudents.length} alumnos, ${parsedPackages.length} planes y ${parsedStudentPackages.length} paquetes desde Google Sheets.`,
       count: {
         students: parsedStudents.length,
-        packages: parsedStudentPackages.length,
+        packages: parsedPackages.length,
+        studentPackages: parsedStudentPackages.length,
         classes: parsedClasses.length,
         instructors: parsedInstructors.length,
         payments: parsedPayments.length
@@ -410,7 +445,7 @@ export const exportToGoogleSheets = async (spreadsheetId: string): Promise<SyncR
   }
 
   try {
-    const sheetNames = ['Alumnos', 'Instructores', 'Clases', 'Paquetes de Alumnos', 'Pagos registrados', 'Equipamiento'];
+    const sheetNames = ['Alumnos', 'Instructores', 'Clases', 'Paquetes', 'Paquetes de Alumnos', 'Pagos registrados', 'Equipamiento'];
     
     // 1. Ensure all sheet tabs exist first
     const metaRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}?fields=sheets.properties.title`, {
@@ -445,14 +480,15 @@ export const exportToGoogleSheets = async (spreadsheetId: string): Promise<SyncR
     }
 
     // 2. Fetch all local data using dynamic imports to prevent circular dependencies
-    const { getStudents, getInstructors, getClasses, getStudentPackages, getPayments, getEquipment } = await import('./db');
-    const [alumnos, instructores, clases, studentPkgs, pagos, equipamiento] = await Promise.all([
+    const { getStudents, getInstructors, getClasses, getStudentPackages, getPayments, getEquipment, getPackages } = await import('./db');
+    const [alumnos, instructores, clases, studentPkgs, pagos, equipamiento, paquetesCatalogo] = await Promise.all([
       getStudents(),
       getInstructors(),
       getClasses(),
       getStudentPackages(),
       getPayments(),
-      getEquipment()
+      getEquipment(),
+      getPackages()
     ]);
 
     // Helper function to write sheet data
@@ -548,7 +584,14 @@ export const exportToGoogleSheets = async (spreadsheetId: string): Promise<SyncR
     ];
     await writeSheetData('Pagos registrados!A1:F5000', pagosValues);
 
-    // F. Equipamiento
+    // F. Paquetes (catalog)
+    const pkgValues = [
+      ['ID', 'Nombre', 'Precio', 'Clases Totales'],
+      ...paquetesCatalogo.map(p => [p.id || '', p.name, p.price ?? 0, p.totalClasses ?? 1])
+    ];
+    await writeSheetData('Paquetes!A1:D500', pkgValues);
+
+    // G. Equipamiento
     const equipValues = [
       ['ID', 'Tipo', 'Talla', 'Marca', 'Condición', 'Estado', 'Notas', 'Asignado A Tipo', 'Asignado A ID', 'Asignado A Nombre'],
       ...equipamiento.map(e => [
@@ -571,7 +614,8 @@ export const exportToGoogleSheets = async (spreadsheetId: string): Promise<SyncR
       message: 'Base de datos en Google Sheets actualizada con éxito en tiempo real.',
       count: {
         students: alumnos.length,
-        packages: studentPkgs.length,
+        packages: paquetesCatalogo.length,
+        studentPackages: studentPkgs.length,
         classes: clases.length,
         instructors: instructores.length,
         payments: pagos.length

@@ -184,15 +184,16 @@ export default function GoogleSheetsSync() {
     addLog('Iniciando exportación de datos a Google Sheets...');
 
     try {
-      const sheetNames = ['Alumnos', 'Instructores', 'Clases', 'Paquetes de Alumnos', 'Pagos registrados'];
+      const sheetNames = ['Alumnos', 'Instructores', 'Clases', 'Paquetes', 'Paquetes de Alumnos', 'Pagos registrados'];
       await ensureSheetsExist(activeToken, spreadsheetId, sheetNames);
 
-      const [alumnos, instructores, clases, studentPkgs, pagos] = await Promise.all([
+      const [alumnos, instructores, clases, studentPkgs, pagos, paquetesCatalogo] = await Promise.all([
         getStudents(),
         getInstructors(),
         getClasses(),
         getStudentPackages(),
-        getPayments()
+        getPayments(),
+        getPackages()
       ]);
 
       // 1. Export Alumnos
@@ -248,6 +249,14 @@ export default function GoogleSheetsSync() {
         ...pagos.map(p => [p.id || '', p.studentPackageId, p.amount ?? 0, p.date || '', p.method || '', p.notes || ''])
       ];
       await writeSheetData(activeToken, spreadsheetId, 'Pagos registrados!A1:F5000', pagosValues);
+
+      // 6. Export Paquetes (catalog)
+      addLog(`Exportando ${paquetesCatalogo.length} Planes del catálogo...`);
+      const pkgValues = [
+        ['ID', 'Nombre', 'Precio', 'Clases Totales'],
+        ...paquetesCatalogo.map(p => [p.id || '', p.name, p.price ?? 0, p.totalClasses ?? 1])
+      ];
+      await writeSheetData(activeToken, spreadsheetId, 'Paquetes!A1:D500', pkgValues);
 
       addLog('✅ ¡Exportación completada exitosamente en todas las pestañas!');
       alert('Sincronización de exportación finalizada correctamente.');
@@ -549,7 +558,37 @@ export default function GoogleSheetsSync() {
       }
       addLog(`Se leyeron ${parsedStudentPackages.length} planes de alumnos.`);
 
-      // 5. Gather current local packages and payments to avoid dropping them
+      // 5. Fetch Paquetes catalog from Sheets
+      addLog('Leyendo catálogo de Planes desde Sheets...');
+      const pkgCatRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Paquetes!A1:D500`, {
+        headers: { Authorization: `Bearer ${activeToken}` }
+      });
+      const pkgCatData = pkgCatRes.ok ? await pkgCatRes.json() : null;
+      const pkgCatRows = pkgCatData?.values || [];
+      const parsedPkgCatalog: any[] = [];
+      if (pkgCatRows.length >= 2) {
+        const headers = pkgCatRows[0].map((h: string) => h.trim().toLowerCase());
+        const idIdx = headers.indexOf('id');
+        const nameIdx = headers.indexOf('nombre');
+        const priceIdx = headers.indexOf('precio');
+        const classesIdx = headers.indexOf('clases totales');
+        for (let i = 1; i < pkgCatRows.length; i++) {
+          const row = pkgCatRows[i];
+          const name = row[nameIdx];
+          if (!name) continue;
+          const pkey = name.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+          if (parsedPkgCatalog.some((p: any) => p.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') === pkey)) continue;
+          parsedPkgCatalog.push({
+            id: row[idIdx] || `pkg-${Date.now()}-${i}`,
+            name: name.trim(),
+            price: Number(row[priceIdx]) || 0,
+            totalClasses: Number(row[classesIdx]) || 1
+          });
+        }
+      }
+      addLog(`Se leyeron ${parsedPkgCatalog.length} planes del catálogo.`);
+
+      // 6. Gather current local payments to avoid dropping them
       addLog('Consultando planes y pagos locales...');
       const [currentPkgs, currentPayments] = await Promise.all([
         getPackages(),
@@ -561,7 +600,7 @@ export default function GoogleSheetsSync() {
         addLog('Modo estático detectado. Sobrescribiendo datos directamente en LocalStorage...');
         localStorage.setItem(LS_KEYS.students, JSON.stringify(parsedStudents));
         localStorage.setItem(LS_KEYS.instructors, JSON.stringify(parsedInstructors));
-        localStorage.setItem(LS_KEYS.packages, JSON.stringify(currentPkgs));
+        localStorage.setItem(LS_KEYS.packages, JSON.stringify(parsedPkgCatalog.length > 0 ? parsedPkgCatalog : currentPkgs));
         localStorage.setItem(LS_KEYS.studentPackages, JSON.stringify(parsedStudentPackages));
         localStorage.setItem(LS_KEYS.classes, JSON.stringify(parsedClasses));
         localStorage.setItem(LS_KEYS.payments, JSON.stringify(currentPayments));
@@ -579,7 +618,7 @@ export default function GoogleSheetsSync() {
         body: JSON.stringify({
           students: parsedStudents,
           instructors: parsedInstructors,
-          packages: currentPkgs,
+          packages: parsedPkgCatalog.length > 0 ? parsedPkgCatalog : currentPkgs,
           studentPackages: parsedStudentPackages,
           classes: parsedClasses,
           payments: currentPayments
