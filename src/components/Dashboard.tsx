@@ -9,6 +9,7 @@ import {
   AlertTriangle, 
   Calendar, 
   ChevronRight, 
+  ChevronLeft,
   Clock, 
   TrendingUp, 
   Pocket,
@@ -16,7 +17,7 @@ import {
 } from 'lucide-react';
 import { StudentPackage, Student, Class, Instructor, Payment } from '../types';
 import { getStudents, getStudentPackages, getClasses, getInstructors, getPayments } from '../services/db';
-import { isBefore, addDays, parseISO, isToday, format } from 'date-fns';
+import { isBefore, addDays, subDays, addWeeks, subWeeks, addMonths, subMonths, addYears, subYears, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, parseISO, format } from 'date-fns';
 import { getAccessToken, initAuth } from '../services/googleAuth';
 import { syncFromGoogleSheets } from '../services/sheetsSync';
 import StudentDossierModal from './StudentDossierModal';
@@ -38,6 +39,8 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (view: string) 
   const [spreadsheetId, setSpreadsheetId] = useState(() => {
     return localStorage.getItem('spreadsheet_id') || '1OuuRJwIUwqEnfb9d_JMOsItxMDGwRAA231vRTO-diR8';
   });
+  const [viewMode, setViewMode] = useState<'day' | 'week' | 'month' | 'year'>('day');
+  const [viewDate, setViewDate] = useState(new Date());
 
   const fetchData = async () => {
     try {
@@ -149,17 +152,44 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (view: string) 
     }
   });
 
-  // Today's classes schedule
-  const todaysClasses = classes.filter(cls => {
-    try {
-      return isToday(parseISO(cls.date));
-    } catch (e) {
-      return false;
-    }
-  }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  // Date range helpers for the selected view
+  const getViewRange = (date: Date) => {
+    if (viewMode === 'day') return { start: date, end: date };
+    if (viewMode === 'week') return { start: startOfWeek(date, { weekStartsOn: 1 }), end: endOfWeek(date, { weekStartsOn: 1 }) };
+    if (viewMode === 'month') return { start: startOfMonth(date), end: endOfMonth(date) };
+    return { start: startOfYear(date), end: endOfYear(date) };
+  };
 
-  // Total earnings calculated from payments table
-  const totalRecaudado = payments.reduce((sum, p) => sum + p.amount, 0);
+  const viewRange = getViewRange(viewDate);
+
+  const isInViewRange = (d: string) => {
+    try {
+      const parsed = parseISO(d);
+      return parsed >= viewRange.start && parsed <= viewRange.end;
+    } catch { return false; }
+  };
+
+  const viewLabel = () => {
+    if (viewMode === 'day') return format(viewDate, 'EEEE d \'de\' MMMM yyyy');
+    if (viewMode === 'week') return `${format(viewRange.start, 'd MMM')} – ${format(viewRange.end, 'd MMM yyyy')}`;
+    if (viewMode === 'month') return format(viewDate, 'MMMM yyyy');
+    return format(viewDate, 'yyyy');
+  };
+
+  const navigateView = (dir: -1 | 1) => {
+    if (viewMode === 'day') setViewDate(d => dir === -1 ? subDays(d, 1) : addDays(d, 1));
+    else if (viewMode === 'week') setViewDate(d => dir === -1 ? subWeeks(d, 1) : addWeeks(d, 1));
+    else if (viewMode === 'month') setViewDate(d => dir === -1 ? subMonths(d, 1) : addMonths(d, 1));
+    else setViewDate(d => dir === -1 ? subYears(d, 1) : addYears(d, 1));
+  };
+
+  // Filtered classes by view
+  const filteredClasses = classes.filter(cls => isInViewRange(cls.date))
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+  // Filtered earnings by view
+  const filteredRecaudado = payments.filter(p => isInViewRange(p.date))
+    .reduce((sum, p) => sum + p.amount, 0);
 
   // Time-based greeting helper
   const getGreeting = () => {
@@ -275,8 +305,8 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (view: string) 
         >
           <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full blur-2xl pointer-events-none"></div>
           <div className="space-y-1 relative z-10">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block font-mono">Recaudado Caja</span>
-            <span className="text-2xl font-black text-slate-900 mt-1 block font-display">S/. {totalRecaudado.toFixed(2)}</span>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block font-mono">Recaudado ({viewMode === 'day' ? 'Hoy' : viewMode === 'week' ? 'Semana' : viewMode === 'month' ? 'Mes' : 'Año'})</span>
+            <span className="text-2xl font-black text-slate-900 mt-1 block font-display">S/. {filteredRecaudado.toFixed(2)}</span>
             <span className="text-[11px] text-emerald-600 hover:text-emerald-700 font-semibold inline-flex items-center gap-0.5">Registros de cobro <ChevronRight className="w-3 h-3" /></span>
           </div>
           <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-black text-base border border-emerald-100 relative z-10 shadow-xs">
@@ -389,15 +419,39 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (view: string) 
         </div>
       </div>
 
-      {/* AGENDA DE HOY Y REPORTES RAPIDOS DE SISTEMA */}
+      {/* VIEW MODE FILTER CHIPS + DATE NAVIGATION */}
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="flex bg-white rounded-xl border border-slate-200 shadow-xs p-0.5 gap-0.5">
+          {(['day', 'week', 'month', 'year'] as const).map(mode => (
+            <button
+              key={mode}
+              onClick={() => { setViewMode(mode); }}
+              className={`px-4 py-2 text-xs font-bold rounded-lg transition cursor-pointer ${
+                viewMode === mode
+                  ? 'bg-cyan-600 text-white shadow-sm'
+                  : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'
+              }`}
+            >
+              {mode === 'day' ? 'Día' : mode === 'week' ? 'Semana' : mode === 'month' ? 'Mes' : 'Año'}
+            </button>
+          ))}
+        </div>
+        <div className="flex items-center gap-1 bg-white rounded-xl border border-slate-200 shadow-xs px-1 py-1">
+          <button onClick={() => navigateView(-1)} className="p-1.5 rounded-lg hover:bg-slate-100 transition cursor-pointer"><ChevronLeft className="w-4 h-4 text-slate-600" /></button>
+          <span className="text-xs font-bold text-slate-700 px-2 min-w-[140px] text-center capitalize">{viewLabel()}</span>
+          <button onClick={() => navigateView(1)} className="p-1.5 rounded-lg hover:bg-slate-100 transition cursor-pointer"><ChevronRight className="w-4 h-4 text-slate-600" /></button>
+        </div>
+      </div>
+
+      {/* AGENDA DE CLASES Y REPORTES RAPIDOS DE SISTEMA */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-        {/* Today's Classes Agenda Widget - CRITICAL FOR SURF SCHOOLS */}
+        {/* Classes Agenda Widget - Filtered by view */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 col-span-1 lg:col-span-2 flex flex-col justify-between overflow-hidden">
           <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row gap-3 justify-between sm:items-center">
             <div>
-              <h3 className="text-base font-bold text-slate-800 font-display">Clases del Día / Agenda de Hoy</h3>
-              <p className="text-xs text-slate-400">Asistencia y cronograma de instructores para la fecha actual</p>
+              <h3 className="text-base font-bold text-slate-800 font-display">Clases — {viewMode === 'day' ? 'Agenda de Hoy' : viewMode === 'week' ? 'Vista Semanal' : viewMode === 'month' ? 'Vista Mensual' : 'Vista Anual'}</h3>
+              <p className="text-xs text-slate-400">Asistencia y cronograma de instructores para el período seleccionado</p>
             </div>
             <button 
               onClick={() => onNavigate?.('classes')} 
@@ -409,10 +463,12 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (view: string) 
           </div>
           
           <div className="p-6 flex-1 max-h-[360px] overflow-y-auto">
-            {todaysClasses.length === 0 ? (
+            {filteredClasses.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-center">
                 <span className="text-4xl">🌊</span>
-                <p className="text-sm font-semibold text-slate-500 mt-3 font-display">No hay clases programadas para hoy</p>
+                <p className="text-sm font-semibold text-slate-500 mt-3 font-display">
+                  {viewMode === 'day' ? 'No hay clases programadas para hoy' : `No hay clases en ${viewMode === 'week' ? 'esta semana' : viewMode === 'month' ? 'este mes' : 'este año'}`}
+                </p>
                 <p className="text-xs text-slate-400 mt-1 max-w-xs">Aprovecha el tiempo para mantenimiento de tablas o sincronización de planillas.</p>
                 <button 
                   onClick={() => onNavigate?.('classes')}
@@ -423,7 +479,7 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (view: string) 
               </div>
             ) : (
               <div className="space-y-3">
-                {todaysClasses.map(cls => {
+                {filteredClasses.map(cls => {
                   let clsTime = cls.date;
                   try {
                     clsTime = format(parseISO(cls.date), 'HH:mm');
