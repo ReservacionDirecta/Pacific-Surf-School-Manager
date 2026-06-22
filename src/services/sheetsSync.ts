@@ -59,6 +59,7 @@ export const syncFromGoogleSheets = async (spreadsheetId: string): Promise<SyncR
     let parsedClasses: Class[] = [];
     let parsedPayments: Payment[] = [];
     let parsedEquipment: Equipment[] = [];
+    let parsedPackages: Package[] = [];
 
     // Let's check which sheets are present.
     // Case A: The spreadsheet has our structured multi-tab format ('Alumnos', 'Instructores', etc.)
@@ -155,7 +156,6 @@ export const syncFromGoogleSheets = async (spreadsheetId: string): Promise<SyncR
       }
 
       // --- FETCH STANDARD 'Paquetes' CATALOG TAB ---
-      let parsedPackages: Package[] = [];
       if (sheetTitles.includes('Paquetes')) {
         const pkgRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Paquetes!A1:Z200`, {
           headers: { Authorization: `Bearer ${token}` }
