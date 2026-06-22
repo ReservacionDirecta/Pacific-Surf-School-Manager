@@ -460,6 +460,28 @@ async function startServer() {
     await db.prepare('INSERT INTO users (email, password, name) VALUES (?, ?, ?)').run(adminEmail, hashedPassword, 'Super Admin');
   }
 
+  // Seed default packages only if table is empty (preserves user-created packages)
+  const existingPackageCount = (await db.prepare('SELECT COUNT(*) as count FROM packages').get() as any)?.count ?? 0;
+  if (existingPackageCount === 0) {
+    const defaultPackages = [
+      { name: 'Grupal - 1 Clase', totalClasses: 1, price: 120 },
+      { name: 'Grupal - 4 Clases', totalClasses: 4, price: 400 },
+      { name: 'Grupal - 8 Clases', totalClasses: 8, price: 720 },
+      { name: 'Grupal - 12 Clases', totalClasses: 12, price: 1020 },
+      { name: 'Personalizada - 1 Clase', totalClasses: 1, price: 180 },
+      { name: 'Personalizada - 4 Clases', totalClasses: 4, price: 600 },
+      { name: 'Personalizada - 8 Clases', totalClasses: 8, price: 1120 },
+      { name: 'Personalizada - 12 Clases', totalClasses: 12, price: 1620 },
+    ];
+    for (const p of defaultPackages) {
+      const id = Math.random().toString(36).substr(2, 9);
+      await db.prepare(
+        'INSERT INTO packages (id, name, price, "totalClasses", description) VALUES (?, ?, ?, ?, ?)'
+      ).run(id, p.name, p.price, p.totalClasses, 'Catálogo inicial');
+    }
+    console.log(`🌱 Sembrados ${defaultPackages.length} planes por defecto (tabla vacía).`);
+  }
+
   // API Routes
   
   // Auth

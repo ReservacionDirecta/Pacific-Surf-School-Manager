@@ -43,10 +43,15 @@ const initDefaultLocalStorageData = () => {
   // 1. Packages
   if (!localStorage.getItem(LS_KEYS.packages)) {
     const defaultPackages: Package[] = [
-      { id: 'pkg-1', name: 'Bautizo de Surf (1 Clase)', price: 60, totalClasses: 1 },
-      { id: 'pkg-2', name: 'Aventura Surfer (4 Clases)', price: 220, totalClasses: 4 },
-      { id: 'pkg-3', name: 'Instructor Premium (12 Clases)', price: 600, totalClasses: 12 }
-    ];
+      { name: 'Grupal - 1 Clase', totalClasses: 1, price: 120 },
+      { name: 'Grupal - 4 Clases', totalClasses: 4, price: 400 },
+      { name: 'Grupal - 8 Clases', totalClasses: 8, price: 720 },
+      { name: 'Grupal - 12 Clases', totalClasses: 12, price: 1020 },
+      { name: 'Personalizada - 1 Clase', totalClasses: 1, price: 180 },
+      { name: 'Personalizada - 4 Clases', totalClasses: 4, price: 600 },
+      { name: 'Personalizada - 8 Clases', totalClasses: 8, price: 1120 },
+      { name: 'Personalizada - 12 Clases', totalClasses: 12, price: 1620 },
+    ].map(p => ({ ...p, id: 'pkg-' + p.name.replace(/[^a-z0-9]/gi, '_').toLowerCase() }));
     localStorage.setItem(LS_KEYS.packages, JSON.stringify(defaultPackages));
   }
 
