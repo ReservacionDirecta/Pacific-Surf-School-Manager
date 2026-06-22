@@ -11,6 +11,8 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
+  ArrowLeft,
+  ArrowRight,
   Eye,
   CreditCard,
   Pencil,
@@ -47,6 +49,26 @@ export default function Payments({ onNavigate }: { onNavigate?: (view: string) =
   const [assignAmountPaid, setAssignAmountPaid] = useState('');
   const [assignNotes, setAssignNotes] = useState('');
   const [assignDueDate, setAssignDueDate] = useState('');
+
+  // Month filter and view mode
+  const now = new Date();
+  const [filterMonth, setFilterMonth] = useState(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'exhausted' | 'expired'>('all');
+  const [showView, setShowView] = useState<'pending' | 'paid' | 'all'>('pending');
+
+  const [year, month] = filterMonth.split('-').map(Number);
+  const monthStart = new Date(year, month - 1, 1);
+  const monthEnd = new Date(year, month, 0, 23, 59, 59, 999);
+
+  const goPrevMonth = () => {
+    const d = new Date(year, month - 2, 1);
+    setFilterMonth(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+  };
+  const goNextMonth = () => {
+    const d = new Date(year, month, 1);
+    setFilterMonth(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+  };
+  const monthLabel = monthStart.toLocaleDateString('es-PE', { month: 'long', year: 'numeric' });
 
   // Multi-select deletion
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -208,7 +230,13 @@ export default function Payments({ onNavigate }: { onNavigate?: (view: string) =
     }
   };
 
+  const paymentsInMonth = payments.filter(p => {
+    const d = new Date(p.date);
+    return d >= monthStart && d <= monthEnd;
+  });
+
   const totalCollected = payments.reduce((sum, p) => sum + p.amount, 0);
+  const totalCollectedMonth = paymentsInMonth.reduce((sum, p) => sum + p.amount, 0);
   
   const totalReceivables = studentPackages.reduce((sum, sp) => {
     if (sp.amountPaid < sp.totalPrice && sp.status === 'active') {
@@ -217,7 +245,7 @@ export default function Payments({ onNavigate }: { onNavigate?: (view: string) =
     return sum;
   }, 0);
 
-  const collectedByMethod = payments.reduce((acc, p) => {
+  const collectedByMethod = paymentsInMonth.reduce((acc, p) => {
     const m = p.method || 'Efectivo';
     acc[m] = (acc[m] || 0) + p.amount;
     return acc;
@@ -225,14 +253,19 @@ export default function Payments({ onNavigate }: { onNavigate?: (view: string) =
 
   const today = new Date();
   
-  // Filter pending packages by name
+  // Filter packages by name, status, and view mode
   const filteredPending = studentPackages
     .filter(sp => {
       const student = students[sp.studentId];
       if (!student) return false;
       const matchesName = student.name.toLowerCase().includes(filterStudentName.toLowerCase());
+      const matchesStatus = statusFilter === 'all' || sp.status === statusFilter;
       const isPending = sp.amountPaid < sp.totalPrice;
-      return matchesName && isPending;
+      const isPaid = sp.amountPaid >= sp.totalPrice;
+      let matchesView = true;
+      if (showView === 'pending') matchesView = isPending;
+      else if (showView === 'paid') matchesView = isPaid;
+      return matchesName && matchesStatus && matchesView;
     })
     .sort((a, b) => {
       const dir = sortDir === 'asc' ? 1 : -1;
@@ -388,12 +421,25 @@ export default function Payments({ onNavigate }: { onNavigate?: (view: string) =
         </div>
       </div>
 
+      {/* MONTH NAVIGATOR */}
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-150 px-6 py-3 flex items-center justify-between">
+        <button onClick={goPrevMonth} className="p-2 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition cursor-pointer">
+          <ArrowLeft className="w-4 h-4" />
+        </button>
+        <div className="flex items-center gap-2 text-sm font-bold text-slate-800 font-display tracking-tight">
+          {monthLabel}
+        </div>
+        <button onClick={goNextMonth} className="p-2 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition cursor-pointer">
+          <ArrowRight className="w-4 h-4" />
+        </button>
+      </div>
+
       {/* SUMMARY DASHBOARD WIDGETS */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
         <div className="bg-gradient-to-br from-emerald-50 to-teal-50/50 p-5 rounded-2xl border border-emerald-100 flex items-center justify-between shadow-xs">
           <div>
-            <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-widest block font-mono">Total Recaudado</span>
-            <span className="text-2xl font-black text-emerald-990 tracking-tight mt-1 block font-display">S/. {totalCollected.toFixed(2)}</span>
+            <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-widest block font-mono">Recaudado del Mes</span>
+            <span className="text-2xl font-black text-emerald-990 tracking-tight mt-1 block font-display">S/. {totalCollectedMonth.toFixed(2)}</span>
           </div>
           <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
             S/.
@@ -411,7 +457,7 @@ export default function Payments({ onNavigate }: { onNavigate?: (view: string) =
         </div>
 
         <div className="bg-white p-5 rounded-2xl border border-slate-150 col-span-1 md:col-span-2">
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block font-mono mb-2.5">Recaudación por Método</span>
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block font-mono mb-2.5">Cobros del Mes por Método</span>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
             <div className="bg-emerald-50/50 p-2.5 rounded-xl border border-emerald-100">
               <span className="text-[10px] text-emerald-800 font-bold block uppercase tracking-wide">Efectivo</span>
@@ -437,23 +483,50 @@ export default function Payments({ onNavigate }: { onNavigate?: (view: string) =
       <div className="bg-white rounded-2xl shadow-sm border border-slate-150">
         <div className="px-6 py-4 border-b border-slate-150 bg-slate-50/50 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <h3 className="text-xs font-bold text-slate-650 uppercase tracking-widest font-mono whitespace-nowrap">Cobros Pendientes</h3>
+            <h3 className="text-xs font-bold text-slate-650 uppercase tracking-widest font-mono whitespace-nowrap">Planes de Clases</h3>
             <span className="bg-rose-50 border border-rose-150 text-rose-700 text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider font-mono">
               {filteredPending.length}
             </span>
           </div>
-          <div className="relative flex-1 max-w-xs">
-            <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400">
-              <Search className="w-3.5 h-3.5" />
-            </span>
-            <input 
-              type="text" 
-              placeholder="Buscar alumno..." 
-              value={filterStudentName}
-              onChange={e => setFilterStudentName(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 text-slate-800 pl-8 pr-3 py-1.5 text-xs focus:border-cyan-500 outline-none transition bg-white"
-            />
+          <div className="flex items-center gap-2 flex-1 max-w-lg">
+            <div className="flex gap-1 bg-slate-100 rounded-lg p-0.5">
+              {(['pending', 'paid', 'all'] as const).map(v => (
+                <button key={v} onClick={() => setShowView(v)}
+                  className={`px-2.5 py-1 rounded-md text-[10px] font-bold transition cursor-pointer ${showView === v ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'}`}
+                >
+                  {v === 'pending' ? 'Pendientes' : v === 'paid' ? 'Saldados' : 'Todos'}
+                </button>
+              ))}
+            </div>
+            <div className="relative flex-1 min-w-[140px]">
+              <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400">
+                <Search className="w-3.5 h-3.5" />
+              </span>
+              <input 
+                type="text" 
+                placeholder="Buscar alumno..." 
+                value={filterStudentName}
+                onChange={e => setFilterStudentName(e.target.value)}
+                className="w-full rounded-lg border border-slate-200 text-slate-800 pl-8 pr-3 py-1.5 text-xs focus:border-cyan-500 outline-none transition bg-white"
+              />
+            </div>
           </div>
+        </div>
+
+        {/* Status filter chips */}
+        <div className="px-6 py-2 border-b border-slate-100 bg-slate-50/30 flex flex-wrap items-center gap-2">
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider font-mono mr-1">Estado:</span>
+          {(['all', 'active', 'exhausted', 'expired'] as const).map(s => (
+            <button key={s} onClick={() => setStatusFilter(s)}
+              className={`px-2.5 py-1 rounded-full text-[10px] font-bold transition cursor-pointer ${
+                statusFilter === s
+                  ? s === 'all' ? 'bg-slate-800 text-white' : s === 'active' ? 'bg-emerald-500 text-white' : s === 'exhausted' ? 'bg-amber-500 text-white' : 'bg-red-500 text-white'
+                  : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+              }`}
+            >
+              {s === 'all' ? 'Todos' : s === 'active' ? 'Activos' : s === 'exhausted' ? 'Agotados' : 'Expirados'}
+            </button>
+          ))}
         </div>
 
         {selectedIds.size > 0 && (
